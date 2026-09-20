@@ -2,7 +2,7 @@ import kitchenImage from "@/assets/kitchen-cleaning.jpg";
 import bathImage from "@/assets/bath-care.jpg";
 import utilityImage from "@/assets/home-utility.jpg";
 
-export type Product = { id:string; name:string; category:string; price:number; mrp:number; rating:number; reviews:number; pack:string; image:string; badge?:string; description:string; stock:string; bulk:[number,number][] };
+export type Product = { id:string; name:string; category:string; price:number; mrp:number; rating:number; reviews:number; pack:string; image:string; imageUrl?:string; badge?:string; description:string; stock:string; bulk:[number,number][] };
 export const categories = [
   {slug:"kitchen-cleaning",name:"Kitchen Cleaning",image:kitchenImage,count:18,blurb:"Scrubbers, pads & brushes"},
   {slug:"bath-care",name:"Bath Care",image:bathImage,count:12,blurb:"Loofahs & body brushes"},

@@ -1,35 +1,109 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { products } from "@/lib/catalog";
-type StoreValue={cart:Record<string,number>; wishlist:string[]; add:(id:string,qty?:number)=>void; setQty:(id:string,qty:number)=>void; toggleWish:(id:string)=>void; cartCount:number; subtotal:number};
-const StoreContext=createContext<StoreValue|undefined>(undefined);
-export function StoreProvider({children}:{children:ReactNode}){
-  const [cart,setCart]=useState<Record<string,number>>({});
-  const [wishlist,setWishlist]=useState<string[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
+import { getProductsFn } from "@/server-functions";
+
+type StoreValue = {
+  cart: Record<string, number>;
+  wishlist: string[];
+  add: (id: string, qty?: number) => void;
+  setQty: (id: string, qty: number) => void;
+  remove: (id: string) => void;
+  clearCart: () => void;
+  toggleWish: (id: string) => void;
+  cartCount: number;
+  subtotal: number;
+  products: any[];
+  isProductsLoading: boolean;
+};
+
+const StoreContext = createContext<StoreValue | undefined>(undefined);
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [products, setProducts] = useState<any[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('jns-mali_cart');
-      if (saved) {
-        try {
-          setCart(JSON.parse(saved) || {});
-        } catch(e) {}
+    async function load() {
+      try {
+        const data = await getProductsFn();
+        setProducts(data.map((p: any) => ({ ...p, id: p._id || p.id })));
+      } catch (e) {
+        console.error("Failed to load products for store:", e);
+      } finally {
+        setIsProductsLoading(false);
       }
-      setIsInitialized(true);
     }
+    load();
   }, []);
 
-  useEffect(() => {
-    if (isInitialized && typeof window !== 'undefined') {
-      localStorage.setItem('jns-mali_cart', JSON.stringify(cart));
+  const [cart, setCart] = useState<Record<string, number>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("jns_store_cart");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
     }
-  }, [cart, isInitialized]);
+    return {};
+  });
 
-  const add=(id:string,qty=1)=>setCart(c=>({...c,[id]:(c[id]??0)+qty}));
-  const setQty=(id:string,qty:number)=>setCart(c=>{const n={...c}; if(qty<=0) delete n[id]; else n[id]=qty; return n});
-  const toggleWish=(id:string)=>setWishlist(w=>w.includes(id)?w.filter(x=>x!==id):[...w,id]);
- const cartCount=Object.values(cart).reduce((a,b)=>a+b,0);
- const subtotal=useMemo(()=>products.reduce((s,p)=>s+p.price*(cart[p.id]??0),0),[cart]);
- return <StoreContext.Provider value={{cart,wishlist,add,setQty,toggleWish,cartCount,subtotal}}>{children}</StoreContext.Provider>
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("jns_store_wishlist");
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  const updateCart = (newCart: Record<string, number>) => {
+    setCart(newCart);
+    if (typeof window !== "undefined") localStorage.setItem("jns_store_cart", JSON.stringify(newCart));
+  };
+
+  const updateWishlist = (newWishlist: string[]) => {
+    setWishlist(newWishlist);
+    if (typeof window !== "undefined") localStorage.setItem("jns_store_wishlist", JSON.stringify(newWishlist));
+  };
+
+  const add = (id: string, qty = 1) => {
+    const newCart = { ...cart, [id]: (cart[id] ?? 0) + qty };
+    updateCart(newCart);
+  };
+
+  const setQty = (id: string, qty: number) => {
+    const n = { ...cart };
+    if (qty <= 0) delete n[id]; else n[id] = qty;
+    updateCart(n);
+  };
+
+  const remove = (id: string) => {
+    const n = { ...cart };
+    delete n[id];
+    updateCart(n);
+  };
+
+  const clearCart = () => {
+    updateCart({});
+  };
+
+  const toggleWish = (id: string) => {
+    const newWish = wishlist.includes(id) ? wishlist.filter(x => x !== id) : [...wishlist, id];
+    updateWishlist(newWish);
+  };
+
+  // cartCount = total number of items (sum of all quantities)
+  const cartCount = useMemo(() => Object.values(cart).reduce((s, qty) => s + qty, 0), [cart]);
+  const subtotal = useMemo(() => products.reduce((s, p) => s + p.price * (cart[p.id] ?? 0), 0), [cart, products]);
+
+  return (
+    <StoreContext.Provider value={{ cart, wishlist, add, setQty, remove, clearCart, toggleWish, cartCount, subtotal, products, isProductsLoading }}>
+      {children}
+    </StoreContext.Provider>
+  );
 }
-export function useStore(){const v=useContext(StoreContext);if(!v) throw new Error("StoreProvider missing");return v}
+
+export function useStore() {
+  const v = useContext(StoreContext);
+  if (!v) throw new Error("StoreProvider missing");
+  return v;
+}

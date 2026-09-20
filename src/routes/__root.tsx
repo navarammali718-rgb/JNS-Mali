@@ -6,12 +6,17 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
 } from "@tanstack/react-router";
+import { ClerkProvider } from "@clerk/clerk-react";
 import { useEffect, type ReactNode } from "react";
 import { StoreProvider } from "@/components/store/store-context";
 import { SiteShell } from "@/components/store/site-shell";
 
 import appCss from "../styles.css?url";
+import { reportLovableError } from "../lib/lovable-error-reporting";
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"] as string;
 
 function NotFoundComponent() {
   return (
@@ -38,6 +43,9 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  useEffect(() => {
+    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+  }, [error]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -82,13 +90,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Affordable cleaning and household essentials for homes and shops across India." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
@@ -113,10 +118,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = location.startsWith("/admin");
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StoreProvider><SiteShell><Outlet /></SiteShell></StoreProvider>
-    </QueryClientProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <QueryClientProvider client={queryClient}>
+        {isAdmin ? (
+          // Admin routes: no store shell, no header/footer, Clerk available
+          <Outlet />
+        ) : (
+          // Store routes: full store layout
+          <StoreProvider>
+            <SiteShell>
+              <Outlet />
+            </SiteShell>
+          </StoreProvider>
+        )}
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
