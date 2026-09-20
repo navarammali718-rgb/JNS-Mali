@@ -7,7 +7,7 @@ export const getCloudinarySignatureFn = createServerFn({ method: "POST" }).handl
   cloudinary.config({
     cloud_name: process.env['VITE_CLOUDINARY_CLOUD_NAME'] as string,
     api_key: process.env['VITE_CLOUDINARY_API_KEY'] as string,
-    api_secret: process.env['VITE_CLOUDINARY_API_SECRET'] as string,
+    api_secret: process.env['CLOUDINARY_API_SECRET'] as string,
   });
 
   const timestamp = Math.round(new Date().getTime() / 1000);
@@ -15,7 +15,7 @@ export const getCloudinarySignatureFn = createServerFn({ method: "POST" }).handl
     {
       timestamp: timestamp,
     },
-    process.env['VITE_CLOUDINARY_API_SECRET'] as string
+    process.env['CLOUDINARY_API_SECRET'] as string
   );
   
   return { 
