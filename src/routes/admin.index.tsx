@@ -79,19 +79,19 @@ function AdminDashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {statCards.map(({ label, value, icon: Icon, color, iconColor, link }) => (
           <Link
             key={label}
             to={link as any}
-            className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} border border-slate-800 p-5 transition hover:border-slate-700`}
+            className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${color} border border-slate-800 p-4 transition hover:border-slate-700`}
           >
-            <div className={`mb-3 flex size-10 items-center justify-center rounded-xl bg-slate-800 ${iconColor}`}>
-              <Icon className="size-5" />
+            <div className={`mb-2 sm:mb-3 flex size-8 sm:size-10 items-center justify-center rounded-lg sm:rounded-xl bg-slate-800 ${iconColor}`}>
+              <Icon className="size-4 sm:size-5" />
             </div>
-            <p className="text-2xl font-black text-white">{value}</p>
-            <p className="mt-1 text-sm text-slate-400">{label}</p>
-            <ArrowRight className="absolute right-4 top-4 size-4 text-slate-600 transition group-hover:text-slate-400" />
+            <p className="text-lg sm:text-2xl font-black text-white">{value}</p>
+            <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">{label}</p>
+            <ArrowRight className="absolute right-3 top-3 sm:right-4 sm:top-4 size-3 sm:size-4 text-slate-600 transition group-hover:text-slate-400" />
           </Link>
         ))}
       </div>

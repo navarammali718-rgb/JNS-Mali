@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useUser, useClerk, SignIn } from "@clerk/clerk-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const ADMIN_EMAIL = "sanjayparihar0625@gmail.com";
+
 
 const navItems = [
   { to: "/admin" as const, label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -33,8 +33,25 @@ function AdminLayout() {
   const { signOut } = useClerk();
   const navigate = useNavigate();
   const [sideOpen, setSideOpen] = useState(false);
+  const [adminEmails, setAdminEmails] = useState<string[]>([]);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  if (!isLoaded) {
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const { getStorefrontFn } = await import("@/server-functions");
+        const config = await getStorefrontFn();
+        setAdminEmails(config.adminEmails || ["sanjayparihar0625@gmail.com"]);
+      } catch (e) {
+        setAdminEmails(["sanjayparihar0625@gmail.com"]);
+      } finally {
+        setCheckingAuth(false);
+      }
+    }
+    loadConfig();
+  }, []);
+
+  if (!isLoaded || checkingAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950">
         <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -43,7 +60,7 @@ function AdminLayout() {
   }
 
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
-  const isAdmin = isSignedIn && email === ADMIN_EMAIL;
+  const isAdmin = isSignedIn && adminEmails.includes(email);
 
   if (!isSignedIn) {
     return (

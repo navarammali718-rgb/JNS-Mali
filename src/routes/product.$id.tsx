@@ -14,7 +14,7 @@ function Product() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { add, toggleWish, wishlist } = useStore();
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState<string>("1");
   const [p, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,8 +38,11 @@ function Product() {
   }, [id]);
 
   const handleAddToCart = () => {
+    let parsed = parseInt(qty);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+    if (parsed > p.stock) parsed = Math.max(1, p.stock);
     if (p) {
-      add(p.id, qty);
+      add(p.id, parsed);
       navigate({ to: "/cart" });
     }
   };
@@ -81,11 +84,31 @@ function Product() {
           <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <div className="flex h-11 items-center rounded-md border border-input">
-              <Button variant="ghost" size="icon" onClick={() => setQty(Math.max(1, qty - 1))}><Minus /></Button>
-              <input type="number" value={qty} onChange={(e) => setQty(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center font-bold bg-transparent border-none focus:outline-none" style={{ appearance: "textfield", MozAppearance: "textfield" } as any} min="1" />
-              <Button variant="ghost" size="icon" onClick={() => setQty(qty + 1)}><Plus /></Button>
+              <Button variant="ghost" size="icon" onClick={() => {
+                let parsed = parseInt(qty) || 1;
+                setQty(String(Math.max(1, parsed - 1)));
+              }}><Minus /></Button>
+              <input 
+                type="number" 
+                value={qty} 
+                onChange={(e) => setQty(e.target.value)} 
+                onBlur={() => {
+                  let parsed = parseInt(qty);
+                  if (isNaN(parsed) || parsed < 1) parsed = 1;
+                  if (parsed > p.stock) parsed = Math.max(1, p.stock);
+                  setQty(String(parsed));
+                }}
+                className="w-12 text-center font-bold bg-transparent border-none focus:outline-none" 
+                style={{ appearance: "textfield", MozAppearance: "textfield" } as any} 
+                min="1" 
+                max={p.stock}
+              />
+              <Button variant="ghost" size="icon" onClick={() => {
+                let parsed = parseInt(qty) || 1;
+                setQty(String(Math.min(Math.max(1, p.stock), parsed + 1)));
+              }}><Plus /></Button>
             </div>
-            <Button size="lg" className="flex-1" onClick={handleAddToCart}>Add {qty} to cart</Button>
+            <Button size="lg" className="flex-1" onClick={handleAddToCart}>Add to cart</Button>
             <Button variant="outline" size="icon" className="size-11" onClick={() => toggleWish(p.id)}>
               <Heart className={wishlist.includes(p.id) ? 'fill-primary text-primary' : ''} />
             </Button>

@@ -31,6 +31,7 @@ function Checkout() {
   const [pay, setPay] = useState("cod");
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState("");
+  const [isDetecting, setIsDetecting] = useState(false);
 
   const [address, setAddress] = useState({
     fullName: user?.fullName ?? "",
@@ -136,6 +137,36 @@ function Checkout() {
     }
   }
 
+  const handleAutoDetect = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setIsDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          setAddress(a => ({
+            ...a,
+            city: data.address.city || data.address.town || data.address.village || "",
+            postalCode: data.address.postcode || "",
+          }));
+        } catch {
+          setError("Failed to auto-detect location. Please enter manually.");
+        } finally {
+          setIsDetecting(false);
+        }
+      },
+      () => {
+        setError("Location permission denied. Please enter manually.");
+        setIsDetecting(false);
+      }
+    );
+  };
+
   const steps = [
     { n: 1, icon: MapPin, title: "Address" },
     { n: 2, icon: Truck, title: "Delivery" },
@@ -151,9 +182,8 @@ function Checkout() {
         {steps.map(({ n, icon: Icon, title }) => (
           <div
             key={title}
-            className={`flex items-center gap-2 border-b-4 pb-3 text-sm font-bold ${
-              step >= n ? "border-primary text-primary" : "border-border text-muted-foreground"
-            }`}
+            className={`flex items-center gap-2 border-b-4 pb-3 text-sm font-bold ${step >= n ? "border-primary text-primary" : "border-border text-muted-foreground"
+              }`}
           >
             {step > n ? <Check className="size-4" /> : <Icon className="size-4" />}
             {title}
@@ -179,33 +209,39 @@ function Checkout() {
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <Field
                   label="Full name"
-                  placeholder="Ananya Sharma"
+                  placeholder=""
                   value={address.fullName}
                   onChange={(v) => setAddress((a) => ({ ...a, fullName: v }))}
                 />
                 <Field
                   label="Mobile number"
-                  placeholder="98765 43210"
+                  placeholder=""
                   value={address.phone}
                   onChange={(v) => setAddress((a) => ({ ...a, phone: v }))}
                 />
                 <div className="sm:col-span-2">
                   <Field
                     label="Address (flat, building, street)"
-                    placeholder="123, Sunrise Apartments, MG Road"
+                    placeholder=""
                     value={address.address}
                     onChange={(v) => setAddress((a) => ({ ...a, address: v }))}
                   />
                 </div>
+                <div className="sm:col-span-2 flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
+                    {isDetecting ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : <MapPin className="mr-2 size-3.5" />}
+                    {isDetecting ? "Detecting..." : "Auto Detect"}
+                  </Button>
+                </div>
                 <Field
                   label="City"
-                  placeholder="Pune"
+                  placeholder=""
                   value={address.city}
                   onChange={(v) => setAddress((a) => ({ ...a, city: v }))}
                 />
                 <Field
                   label="PIN code"
-                  placeholder="411001"
+                  placeholder=""
                   value={address.postalCode}
                   onChange={(v) => setAddress((a) => ({ ...a, postalCode: v }))}
                 />
@@ -250,8 +286,6 @@ function Checkout() {
               <h2 className="text-2xl font-black">Choose payment</h2>
               <div className="mt-5 space-y-3">
                 {[
-                  { id: "upi", name: "UPI", sub: "Pay with any UPI app" },
-                  { id: "card", name: "Credit / debit card", sub: "Visa, Mastercard and RuPay" },
                   { id: "cod", name: "Cash on delivery", sub: "Pay when your order arrives" },
                 ].map(({ id, name, sub }) => (
                   <label

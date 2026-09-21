@@ -16,6 +16,7 @@ function AdminStorefront() {
     heroTitle: "",
     heroText: "",
     heroImage: "",
+    adminEmails: "",
   });
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,6 +36,7 @@ function AdminStorefront() {
             heroTitle: data.heroTitle ?? "",
             heroText: data.heroText ?? "",
             heroImage: data.heroImage ?? "",
+            adminEmails: data.adminEmails ? data.adminEmails.join(", ") : "",
           });
         }
       } catch (e) {
@@ -71,7 +73,11 @@ function AdminStorefront() {
     setError("");
     setSaved(false);
     try {
-      await updateStorefrontFn({ data: form });
+      const payload = {
+        ...form,
+        adminEmails: form.adminEmails.split(",").map(s => s.trim()).filter(Boolean),
+      };
+      await updateStorefrontFn({ data: payload });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e: any) {
@@ -106,6 +112,19 @@ function AdminStorefront() {
       {saved && <div className="rounded-xl bg-emerald-500/20 px-4 py-3 text-sm text-emerald-400">✓ Changes saved successfully!</div>}
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Admin Access */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 lg:col-span-2">
+          <h2 className="mb-4 font-bold text-white">Admin Access</h2>
+          <label className="block text-sm font-semibold text-slate-300 mb-1.5">Authorized Emails (Comma separated)</label>
+          <textarea
+            value={form.adminEmails}
+            onChange={(e) => setForm((f) => ({ ...f, adminEmails: e.target.value }))}
+            placeholder="admin1@gmail.com, admin2@gmail.com"
+            rows={2}
+            className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
         {/* Announcement bar */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="mb-4 font-bold text-white">Announcement Bar</h2>
@@ -133,7 +152,7 @@ function AdminStorefront() {
           >
             {uploading ? <Loader2 className="size-8 animate-spin text-primary" /> :
               form.heroImage ? <img src={form.heroImage} alt="" className="h-32 w-full rounded-lg object-cover" /> :
-              <><ImagePlus className="size-8 text-slate-600" /><p className="mt-2 text-sm text-slate-500">Upload hero image</p></>}
+                <><ImagePlus className="size-8 text-slate-600" /><p className="mt-2 text-sm text-slate-500">Upload hero image</p></>}
           </div>
           <div className="mt-2 flex gap-2">
             <Input

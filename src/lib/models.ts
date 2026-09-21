@@ -40,6 +40,7 @@ const storefrontSchema = new mongoose.Schema({
   heroTitle: { type: String, default: "Everyday essentials that work hard at home." },
   heroText: { type: String, default: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices." },
   heroImage: { type: String },
+  adminEmails: { type: [String], default: ["sanjayparihar0625@gmail.com"] },
 }, { timestamps: true });
 
 export const Storefront = (mongoose.models['Storefront'] || mongoose.model("Storefront", storefrontSchema)) as mongoose.Model<any>;

@@ -40,7 +40,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const saved = localStorage.getItem("jns_store_cart");
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return {};
   });
@@ -50,7 +50,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try {
         const saved = localStorage.getItem("jns_store_wishlist");
         if (saved) return JSON.parse(saved);
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   });
@@ -66,13 +66,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const add = (id: string, qty = 1) => {
-    const newCart = { ...cart, [id]: (cart[id] ?? 0) + qty };
-    updateCart(newCart);
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const currentQty = cart[id] ?? 0;
+    const newQty = Math.min(product.stock, currentQty + qty);
+    
+    if (newQty > 0) {
+      const newCart = { ...cart, [id]: newQty };
+      updateCart(newCart);
+    }
   };
 
   const setQty = (id: string, qty: number) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
     const n = { ...cart };
-    if (qty <= 0) delete n[id]; else n[id] = qty;
+    if (qty <= 0) {
+      delete n[id];
+    } else {
+      n[id] = Math.min(product.stock, qty);
+    }
     updateCart(n);
   };
 
@@ -91,8 +104,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateWishlist(newWish);
   };
 
-  // cartCount = total number of items (sum of all quantities)
-  const cartCount = useMemo(() => Object.values(cart).reduce((s, qty) => s + qty, 0), [cart]);
+  // cartCount = distinct products
+  const cartCount = useMemo(() => Object.keys(cart).length, [cart]);
   const subtotal = useMemo(() => products.reduce((s, p) => s + p.price * (cart[p.id] ?? 0), 0), [cart, products]);
 
   return (

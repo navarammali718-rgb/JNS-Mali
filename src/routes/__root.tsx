@@ -16,7 +16,8 @@ import { SiteShell } from "@/components/store/site-shell";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env["VITE_CLERK_PUBLISHABLE_KEY"] as string;
+// @ts-ignore - TS expects bracket notation but Vite expects dot notation for replacement
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
 function NotFoundComponent() {
   return (

@@ -64,16 +64,17 @@ export function ProductCard({ product }: { product: any }) {
               <span className="ml-1 text-xs text-muted-foreground line-through">{formatPrice(mrp)}</span>
             )}
           </div>
-          <Button
-            size="sm"
-            variant={inCart ? "secondary" : "default"}
-            aria-label={`Add ${product.name} to cart`}
-            onClick={() => add(product.id, 1)}
-            className="flex items-center gap-1"
-          >
-            {inCart ? <ShoppingCart className="size-3.5" /> : <Plus className="size-3.5" />}
-            <span className="hidden sm:inline">{inCart ? "In cart" : "Add"}</span>
-          </Button>
+          <Link to="/product/$id" params={{ id: product.id }}>
+            <Button
+              size="sm"
+              variant={inCart ? "secondary" : "default"}
+              aria-label={`View ${product.name}`}
+              className="flex items-center gap-1"
+            >
+              {inCart ? <ShoppingCart className="size-3.5" /> : <Plus className="size-3.5" />}
+              <span className="hidden sm:inline">{inCart ? "In cart" : "Add"}</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </article>
