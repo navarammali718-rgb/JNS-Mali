@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Package, Tag, ShoppingBag, TrendingUp, Clock, CheckCircle, Loader2, ArrowRight } from "lucide-react";
-import { getProductsFn, getCategoriesFn, getAllOrdersFn } from "@/server-functions";
+import { getAdminProductsFn, getCategoriesFn, getAllOrdersFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 
 export const Route = createFileRoute("/admin/")({
@@ -24,7 +24,7 @@ function AdminDashboard() {
     async function load() {
       try {
         const [products, categories, orders] = await Promise.all([
-          getProductsFn(),
+          getAdminProductsFn(),
           getCategoriesFn(),
           getAllOrdersFn(),
         ]);
@@ -74,8 +74,8 @@ function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-black text-white">Dashboard</h1>
-        <p className="mt-1 text-slate-400">Welcome back! Here's what's happening with your store.</p>
+        <h1 className="text-3xl font-black text-slate-900">Dashboard</h1>
+        <p className="mt-1 font-medium text-slate-500">Welcome back! Here's what's happening with your store.</p>
       </div>
 
       {/* Stat cards */}
@@ -84,73 +84,77 @@ function AdminDashboard() {
           <Link
             key={label}
             to={link as any}
-            className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${color} border border-slate-800 p-4 transition hover:border-slate-700`}
+            className={`group relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br ${color} border border-slate-100 shadow-sm p-4 transition hover:border-slate-300 hover:shadow-md bg-white`}
           >
-            <div className={`mb-2 sm:mb-3 flex size-8 sm:size-10 items-center justify-center rounded-lg sm:rounded-xl bg-slate-800 ${iconColor}`}>
+            <div className={`mb-2 sm:mb-3 flex size-8 sm:size-10 items-center justify-center rounded-lg sm:rounded-xl bg-white shadow-sm ${iconColor}`}>
               <Icon className="size-4 sm:size-5" />
             </div>
-            <p className="text-lg sm:text-2xl font-black text-white">{value}</p>
-            <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">{label}</p>
-            <ArrowRight className="absolute right-3 top-3 sm:right-4 sm:top-4 size-3 sm:size-4 text-slate-600 transition group-hover:text-slate-400" />
+            <p className="text-lg sm:text-2xl font-black text-slate-900">{value}</p>
+            <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm font-semibold text-slate-500">{label}</p>
+            <ArrowRight className="absolute right-3 top-3 sm:right-4 sm:top-4 size-3 sm:size-4 text-slate-300 transition group-hover:text-slate-600" />
           </Link>
         ))}
       </div>
 
       {/* Quick status */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-amber-500/20">
-            <Clock className="size-5 text-amber-400" />
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-amber-50">
+            <Clock className="size-5 text-amber-500" />
           </div>
           <div>
-            <p className="text-2xl font-black text-white">{stats.pendingOrders}</p>
-            <p className="text-sm text-slate-400">Pending orders</p>
+            <p className="text-2xl font-black text-slate-900">{stats.pendingOrders}</p>
+            <p className="text-sm font-medium text-slate-500">Pending orders</p>
           </div>
-          <Link to="/admin/orders" className="ml-auto text-xs font-semibold text-primary hover:underline">
+          <Link to="/admin/orders" className="ml-auto text-xs font-bold text-primary hover:underline">
             View →
           </Link>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-500/20">
-            <CheckCircle className="size-5 text-emerald-400" />
+        <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="grid size-12 shrink-0 place-items-center rounded-xl bg-emerald-50">
+            <CheckCircle className="size-5 text-emerald-500" />
           </div>
           <div>
-            <p className="text-2xl font-black text-white">{stats.deliveredOrders}</p>
-            <p className="text-sm text-slate-400">Delivered orders</p>
+            <p className="text-2xl font-black text-slate-900">{stats.deliveredOrders}</p>
+            <p className="text-sm font-medium text-slate-500">Delivered orders</p>
           </div>
-          <Link to="/admin/orders" className="ml-auto text-xs font-semibold text-primary hover:underline">
+          <Link to="/admin/orders" className="ml-auto text-xs font-bold text-primary hover:underline">
             View →
           </Link>
         </div>
       </div>
 
       {/* Recent orders */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-          <h2 className="font-bold text-white">Recent Orders</h2>
-          <Link to="/admin/orders" className="text-xs font-semibold text-primary hover:underline">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-4">
+          <h2 className="font-bold text-slate-900">Recent Orders</h2>
+          <Link to="/admin/orders" className="text-xs font-bold text-primary hover:underline">
             View all →
           </Link>
         </div>
         {recentOrders.length === 0 ? (
           <div className="py-10 text-center text-slate-500">No orders yet.</div>
         ) : (
-          <div className="divide-y divide-slate-800">
+          <div className="divide-y divide-slate-100">
             {recentOrders.map((order) => (
-              <div key={order._id} className="flex flex-wrap items-center gap-3 px-5 py-3">
+              <div key={order._id} className="flex flex-wrap items-center gap-3 px-5 py-3 hover:bg-slate-50 transition">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">
+                  <p className="truncate text-sm font-bold text-slate-900">
                     {order.shippingDetails?.fullName ?? "Unknown"}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs font-medium text-slate-500">
                     {order.items?.length ?? 0} item{order.items?.length !== 1 ? "s" : ""} ·{" "}
                     {new Date(order.createdAt).toLocaleDateString("en-IN")}
                   </p>
                 </div>
-                <span className="text-sm font-bold text-white">{formatPrice(order.totalAmount)}</span>
+                <span className="text-sm font-black text-slate-900">{formatPrice(order.totalAmount)}</span>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-bold capitalize ${
-                    statusColor[order.status] ?? "bg-slate-700 text-slate-300"
+                    order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    order.status === 'packed' ? 'bg-indigo-100 text-indigo-700' :
+                    order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
+                    order.status === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                    'bg-slate-100 text-slate-700'
                   }`}
                 >
                   {order.status}

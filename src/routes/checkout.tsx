@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Check, MapPin, Truck, CreditCard, Loader2, Lock } from "lucide-react";
+import { Check, MapPin, Truck, CreditCard, Loader2, Lock, Search, Maximize2, Minimize2 } from "lucide-react";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createOrderFn, syncUserFn } from "@/server-functions";
+import { createOrderFn, syncUserFn, getStorefrontFn } from "@/server-functions";
+
+const MapPicker = lazy(() => import('@/components/MapPicker'));
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -39,9 +41,64 @@ function Checkout() {
     address: "",
     city: "",
     postalCode: "",
+    lat: null as number | null,
+    lng: null as number | null,
   });
 
-  const delivery = subtotal >= 499 ? 0 : 49;
+  const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
+  const [storefront, setStorefront] = useState<any>(null);
+  
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => { 
+    setMounted(true);
+    getStorefrontFn().then(setStorefront).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const delay = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data.features || []);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }, 400);
+    return () => clearTimeout(delay);
+  }, [searchQuery]);
+
+  function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  }
+
+  let calculatedDeliveryFee = storefront?.deliveryFee ?? 40;
+  if (address.lat && address.lng && storefront?.adminLocationLat && storefront?.adminLocationLng) {
+    const dist = getDistanceFromLatLonInKm(address.lat, address.lng, storefront.adminLocationLat, storefront.adminLocationLng);
+    const perKmFee = storefront?.deliveryFeePerKm ?? 0;
+    calculatedDeliveryFee += Math.round(dist * perKmFee);
+  }
+
+  const freeDeliveryThreshold = storefront?.freeDeliveryThreshold ?? 499;
+  const delivery = subtotal >= freeDeliveryThreshold ? 0 : calculatedDeliveryFee;
   const total = subtotal + delivery;
 
   // Cart items with product details
@@ -95,9 +152,15 @@ function Checkout() {
   }
 
   async function handlePlaceOrder() {
-    if (!address.fullName || !address.phone || !address.address || !address.city || !address.postalCode) {
-      setError("Please fill in all address fields.");
+    if (!address.fullName || !address.phone || !address.address || !address.city || !address.postalCode || !address.lat || !address.lng) {
+      setError("Please fill in all address fields and pin your location.");
       setStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!validateDeliveryLocation()) {
+      setStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     setPlacing(true);
@@ -146,25 +209,95 @@ function Checkout() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`);
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
           if (!res.ok) throw new Error();
           const data = await res.json();
           setAddress(a => ({
             ...a,
-            city: data.address.city || data.address.town || data.address.village || "",
-            postalCode: data.address.postcode || "",
+            lat,
+            lng,
+            address: data.display_name || a.address,
+            city: data.address?.city || data.address?.town || data.address?.village || a.city,
+            postalCode: data.address?.postcode || a.postalCode,
           }));
         } catch {
-          setError("Failed to auto-detect location. Please enter manually.");
+          setAddress(a => ({ ...a, lat: pos.coords.latitude, lng: pos.coords.longitude }));
+          setError("Location found, but could not auto-detect address details. Please enter manually.");
         } finally {
           setIsDetecting(false);
         }
       },
       () => {
-        setError("Location permission denied. Please enter manually.");
+        setError("Location permission denied. Please tap on the map or search manually.");
         setIsDetecting(false);
-      }
+      },
+      { enableHighAccuracy: true }
     );
+  };
+
+  const handleSearchMap = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setError("");
+    try {
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.features && data.features.length > 0) {
+          const s = data.features[0];
+          const lat = parseFloat(s.geometry.coordinates[1]);
+          const lng = parseFloat(s.geometry.coordinates[0]);
+          const p = s.properties;
+          const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
+          setAddress(a => ({ ...a, lat, lng, address: label, city: p.city || a.city, postalCode: p.postcode || a.postalCode }));
+        } else {
+          setError("Location not found. Please try a different search or drop the pin manually.");
+        }
+      }
+    } catch {
+      setError("Failed to search location.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+
+
+  function validateDeliveryLocation(): boolean {
+    if (!address.lat || !address.lng) {
+      setError("Please pin your location on the map.");
+      return false;
+    }
+    const adminLat = storefront?.adminLocationLat ?? 13.0285;
+    const adminLng = storefront?.adminLocationLng ?? 77.5462;
+    const maxRadius = storefront?.deliveryRadiusKm ?? 10;
+
+    const dist = getDistanceFromLatLonInKm(address.lat, address.lng, adminLat, adminLng);
+    if (dist > maxRadius) {
+      setError(`Service not available in this location. We only deliver within ${maxRadius}km of our store. (You are ~${Math.round(dist)}km away)`);
+      return false;
+    }
+    return true;
+  }
+
+  const handleMapClick = async (p: [number, number]) => {
+    setAddress(a => ({ ...a, lat: p[0], lng: p[1] }));
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p[0]}&lon=${p[1]}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAddress(a => ({
+          ...a,
+          address: data.display_name || a.address,
+          city: data.address?.city || data.address?.town || data.address?.village || a.city,
+          postalCode: data.address?.postcode || a.postalCode,
+        }));
+      }
+    } catch (e) {
+      // Ignore errors for pin drop
+    }
   };
 
   const steps = [
@@ -220,18 +353,110 @@ function Checkout() {
                   onChange={(v) => setAddress((a) => ({ ...a, phone: v }))}
                 />
                 <div className="sm:col-span-2">
+                  <label className="block text-sm font-semibold mb-1">
+                    Search Location on Map
+                  </label>
+                  <div className="flex gap-2 relative">
+                    <Input
+                      className="h-11 flex-1"
+                      placeholder="e.g. Connaught Place, New Delhi"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          setShowSuggestions(false);
+                          handleSearchMap();
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="secondary" className="h-11 px-4" onClick={() => { setShowSuggestions(false); handleSearchMap(); }} disabled={isSearching}>
+                      {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                    </Button>
+                    
+                    {/* Autocomplete Dropdown */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute top-12 left-0 right-[4.5rem] z-[100] bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {suggestions.map((s, i) => {
+                          const p = s.properties;
+                          const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-muted focus:bg-muted truncate block"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const lng = s.geometry.coordinates[0];
+                                const lat = s.geometry.coordinates[1];
+                                setSearchQuery(label);
+                                setShowSuggestions(false);
+                                setAddress(a => ({ 
+                                  ...a, 
+                                  lat, 
+                                  lng, 
+                                  address: label, 
+                                  city: p.city || a.city, 
+                                  postalCode: p.postcode || a.postalCode 
+                                }));
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="sm:col-span-2 mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold">Pin your exact location *</label>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setIsMapFullscreen(prev => !prev)}>
+                        {isMapFullscreen ? <Minimize2 className="size-3.5 mr-1" /> : <Maximize2 className="size-3.5 mr-1" />}
+                        {isMapFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
+                        {isDetecting ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : <MapPin className="mr-2 size-3.5" />}
+                        {isDetecting ? "Detecting..." : "Auto Detect"}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className={`${isMapFullscreen ? "fixed inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-2rem)]" : "h-[400px]"} w-full rounded-lg border border-border overflow-hidden relative bg-muted transition-all duration-300`}>
+                    {mounted && (
+                      <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm font-medium text-muted-foreground">Loading map...</div>}>
+                        <MapPicker 
+                          position={address.lat && address.lng ? [address.lat, address.lng] : null} 
+                          setPosition={handleMapClick} 
+                        />
+                      </Suspense>
+                    )}
+                    {isMapFullscreen && (
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        className="absolute top-4 right-4 z-[400] shadow-md"
+                        onClick={() => setIsMapFullscreen(false)}
+                      >
+                        <Minimize2 className="mr-2 size-4" /> Close Fullscreen
+                      </Button>
+                    )}
+                  </div>
+                  {!address.lat && <p className="text-sm text-destructive mt-1 font-medium">Please tap on the map to pin your location.</p>}
+                </div>
+                <div className="sm:col-span-2">
                   <Field
-                    label="Address (flat, building, street)"
-                    placeholder=""
+                    label="Address (flat, building, street) - Auto-filled from Map"
+                    placeholder="Drop a pin to auto-fill"
                     value={address.address}
                     onChange={(v) => setAddress((a) => ({ ...a, address: v }))}
                   />
-                </div>
-                <div className="sm:col-span-2 flex justify-end">
-                  <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
-                    {isDetecting ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : <MapPin className="mr-2 size-3.5" />}
-                    {isDetecting ? "Detecting..." : "Auto Detect"}
-                  </Button>
                 </div>
                 <Field
                   label="City"
@@ -250,12 +475,20 @@ function Checkout() {
                 size="lg"
                 className="mt-6 w-full"
                 onClick={() => {
-                  if (!address.fullName || !address.phone || !address.address || !address.city || !address.postalCode) {
-                    setError("Please fill in all fields.");
+                  if (!address.fullName || !address.phone || !address.address || !address.city || !address.postalCode || !address.lat || !address.lng) {
+                    setError("Please fill in all fields and pin your location on the map.");
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                   }
+
+                  if (!validateDeliveryLocation()) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                  }
+
                   setError("");
                   setStep(2);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
                 Continue to delivery
@@ -272,7 +505,7 @@ function Checkout() {
                   <b>Standard delivery</b>
                   <small className="block text-muted-foreground">Arrives in 2–4 business days</small>
                 </span>
-                <b>{delivery === 0 ? "FREE" : "₹49"}</b>
+                <b>{delivery === 0 ? "FREE" : `₹${calculatedDeliveryFee}`}</b>
               </label>
               <Button size="lg" className="mt-6 w-full" onClick={() => setStep(3)}>
                 Continue to payment
@@ -334,7 +567,7 @@ function Checkout() {
               <span>Subtotal</span><b>{formatPrice(subtotal)}</b>
             </div>
             <div className="flex justify-between text-sm">
-              <span>Delivery</span><b>{delivery === 0 ? "FREE" : "₹49"}</b>
+              <span>Delivery</span><b>{delivery === 0 ? "FREE" : `₹${calculatedDeliveryFee}`}</b>
             </div>
           </div>
           <div className="mt-4 flex justify-between border-t border-border pt-4 text-xl font-black">

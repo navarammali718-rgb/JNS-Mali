@@ -47,7 +47,7 @@ function Home(){
           <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">{storefront.heroText}</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link to="/shop">Shop all products <ArrowRight/></Link></Button>
-            <Button variant="outline" size="lg" onClick={(e) => e.preventDefault()}>Buy in bulk (Coming Soon)</Button>
+
           </div>
           <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
             <span>✓ COD available</span><span>✓ GST invoice</span><span>✓ 7-day returns</span>
@@ -91,4 +91,4 @@ function Home(){
 <section className="bg-muted/60"><div className="mx-auto max-w-7xl px-4 py-12"><p className="text-sm font-bold text-primary">Customer favourites</p><div className="flex items-end justify-between"><h2 className="text-3xl font-black">Most reordered</h2><Link to="/shop" className="text-sm font-bold text-primary">See everything →</Link></div>
 {isLoading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin size-8 text-primary" /></div> : <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">{products.slice(0,5).map(p=><ProductCard key={p._id || p.id} product={{...p, id: p._id || p.id}}/>)}</div>}
 </div></section>
-<section className="mx-auto max-w-7xl px-4 py-12"><div className="grid overflow-hidden rounded-lg bg-foreground text-background lg:grid-cols-2"><div className="p-7 sm:p-10"><p className="text-sm font-bold text-secondary">JNS MALI WHOLESALE</p><h2 className="mt-2 text-3xl font-black">Running a shop, hostel or office?</h2><p className="mt-3 max-w-lg text-sm leading-6 opacity-75">Add cartons or mixed cases, see your savings instantly and get a GST-ready order summary. No calls or bargaining required.</p><Button variant="secondary" size="lg" className="mt-6" onClick={(e) => e.preventDefault()}>Open bulk shopping (Coming Soon)</Button></div><div className="grid grid-cols-3 border-t border-background/15 lg:border-l lg:border-t-0">{[['12+','minimum pieces'],['Up to 25%','bulk savings'],['48 hrs','dispatch']].map(([a,b])=><div key={a} className="grid place-content-center border-r border-background/15 p-5 text-center last:border-r-0"><b className="text-2xl text-secondary">{a}</b><span className="text-xs opacity-65">{b}</span></div>)}</div></div></section></main>}
+</main>}

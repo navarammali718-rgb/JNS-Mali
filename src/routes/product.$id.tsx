@@ -40,7 +40,6 @@ function Product() {
   const handleAddToCart = () => {
     let parsed = parseInt(qty);
     if (isNaN(parsed) || parsed < 1) parsed = 1;
-    if (parsed > p.stock) parsed = Math.max(1, p.stock);
     if (p) {
       add(p.id, parsed);
       navigate({ to: "/cart" });
@@ -65,21 +64,26 @@ function Product() {
           <img src={p.imageUrl || p.image} alt={p.name} width={1008} height={1008} className="aspect-square w-full object-cover" />
         </div>
         <div className="lg:py-4">
-          <p className="text-sm font-bold uppercase text-primary">{p.category} · {p.stock} in stock</p>
+          <p className="text-sm font-bold uppercase text-primary">{p.category} · {p.isAvailable !== false ? "Available" : "Not Available"}</p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">{p.name}</h1>
           <div className="mt-3 flex items-center gap-2 text-sm">
             <Star className="size-4 fill-rating text-rating" />
             <b>{p.rating || 4.5}</b>
             <span className="text-muted-foreground">{p.reviews || 24} verified ratings</span>
           </div>
-          <div className="mt-5">
-            <span className="text-3xl font-black">{formatPrice(p.price)}</span>
-            {p.mrp && p.mrp > p.price && (
-              <>
-                <span className="ml-2 text-muted-foreground line-through">{formatPrice(p.mrp)}</span>
-                <span className="ml-2 font-bold text-deal">Save {Math.round((1 - p.price / p.mrp) * 100)}%</span>
-              </>
-            )}
+          <div className="mt-5 flex items-end gap-3 flex-wrap">
+            <div>
+              <span className="text-3xl font-black">{formatPrice(p.price)}</span>
+              {p.mrp && p.mrp > p.price && (
+                <>
+                  <span className="ml-2 text-muted-foreground line-through">{formatPrice(p.mrp)}</span>
+                  <span className="ml-2 font-bold text-deal">Save {Math.round((1 - p.price / p.mrp) * 100)}%</span>
+                </>
+              )}
+            </div>
+            <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              / {p.unit || "Piece"} {p.piecesPerUnit > 1 ? `(${p.piecesPerUnit} pcs)` : ""}
+            </div>
           </div>
           <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -95,17 +99,15 @@ function Product() {
                 onBlur={() => {
                   let parsed = parseInt(qty);
                   if (isNaN(parsed) || parsed < 1) parsed = 1;
-                  if (parsed > p.stock) parsed = Math.max(1, p.stock);
                   setQty(String(parsed));
                 }}
                 className="w-12 text-center font-bold bg-transparent border-none focus:outline-none" 
                 style={{ appearance: "textfield", MozAppearance: "textfield" } as any} 
                 min="1" 
-                max={p.stock}
               />
               <Button variant="ghost" size="icon" onClick={() => {
                 let parsed = parseInt(qty) || 1;
-                setQty(String(Math.min(Math.max(1, p.stock), parsed + 1)));
+                setQty(String(parsed + 1));
               }}><Plus /></Button>
             </div>
             <Button size="lg" className="flex-1" onClick={handleAddToCart}>Add to cart</Button>

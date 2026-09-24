@@ -63,6 +63,9 @@ export function ProductCard({ product }: { product: any }) {
             {mrp && (
               <span className="ml-1 text-xs text-muted-foreground line-through">{formatPrice(mrp)}</span>
             )}
+            <div className="mt-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+              / {product.unit || "Piece"} {product.piecesPerUnit > 1 ? `(${product.piecesPerUnit} pcs)` : ""}
+            </div>
           </div>
           <Link to="/product/$id" params={{ id: product.id }}>
             <Button

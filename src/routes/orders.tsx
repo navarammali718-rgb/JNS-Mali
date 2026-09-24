@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getUserOrdersFn } from "@/server-functions";
+import { getUserOrdersFn, getStorefrontFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 
 export const Route = createFileRoute("/orders")({
@@ -22,13 +22,14 @@ export const Route = createFileRoute("/orders")({
 
 const STATUS_STEPS = [
   { key: "pending", icon: Clock, title: "Confirmed" },
-  { key: "pending", icon: PackageCheck, title: "Packed" },
+  { key: "packed", icon: PackageCheck, title: "Packed" },
   { key: "shipped", icon: Truck, title: "Shipped" },
   { key: "delivered", icon: Check, title: "Delivered" },
 ];
 
 const statusToStep: Record<string, number> = {
   pending: 1,
+  packed: 2,
   shipped: 3,
   delivered: 4,
   cancelled: 0,
@@ -36,6 +37,7 @@ const statusToStep: Record<string, number> = {
 
 const statusColor: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
+  packed: "bg-indigo-100 text-indigo-700",
   shipped: "bg-blue-100 text-blue-700",
   delivered: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
@@ -44,14 +46,19 @@ const statusColor: Record<string, string> = {
 function Page() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [orders, setOrders] = useState<any[]>([]);
+  const [storefront, setStorefront] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!isSignedIn || !user) { setIsLoading(false); return; }
     async function load() {
       try {
-        const data = await getUserOrdersFn({ data: { userId: user!.id } });
+        const [data, storeData] = await Promise.all([
+          getUserOrdersFn({ data: { userId: user!.id } }),
+          getStorefrontFn()
+        ]);
         setOrders(data);
+        if (storeData) setStorefront(storeData);
       } catch (e) {
         console.error(e);
       } finally {
@@ -90,6 +97,15 @@ function Page() {
     <main className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-4xl font-black">My Orders</h1>
       <p className="mt-2 text-muted-foreground">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
+
+      {storefront?.contactPhone && (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary">
+          Need help? Customer Care: 
+          <a href={`tel:${storefront.contactPhone}`} className="underline underline-offset-2 hover:text-primary/80">
+            {storefront.contactPhone}
+          </a>
+        </div>
+      )}
 
       {orders.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-border py-20 text-center">

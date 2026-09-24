@@ -4,10 +4,12 @@ import mongoose from "mongoose";
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
-  stock: { type: Number, default: 0 },
+  isAvailable: { type: Boolean, default: true },
   category: { type: String, required: true },
   description: { type: String },
   imageUrl: { type: String },
+  unit: { type: String, default: "Piece" },
+  piecesPerUnit: { type: Number, default: 1 },
 }, { timestamps: true });
 
 export const Product = (mongoose.models['Product'] || mongoose.model("Product", productSchema)) as mongoose.Model<any>;
@@ -41,6 +43,15 @@ const storefrontSchema = new mongoose.Schema({
   heroText: { type: String, default: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices." },
   heroImage: { type: String },
   adminEmails: { type: [String], default: ["sanjayparihar0625@gmail.com"] },
+  adminLocationLat: { type: Number, default: 13.0285 }, // Yeshwanthpur, Bangalore
+  adminLocationLng: { type: Number, default: 77.5462 },
+  adminLocationAddress: { type: String, default: "Yeshwanthpur, Bengaluru, Karnataka, India" },
+  deliveryRadiusKm: { type: Number, default: 10 },
+  deliveryFee: { type: Number, default: 40 },
+  deliveryFeePerKm: { type: Number, default: 0 },
+  freeDeliveryThreshold: { type: Number, default: 499 },
+  contactEmail: { type: String, default: "contact@jnsmali.com" },
+  contactPhone: { type: String, default: "+91 98765 43210" },
 }, { timestamps: true });
 
 export const Storefront = (mongoose.models['Storefront'] || mongoose.model("Storefront", storefrontSchema)) as mongoose.Model<any>;
@@ -64,6 +75,8 @@ const orderSchema = new mongoose.Schema({
     city: { type: String, required: true },
     postalCode: { type: String, required: true },
     phone: { type: String, required: true },
+    lat: { type: Number },
+    lng: { type: Number },
   },
 }, { timestamps: true });
 

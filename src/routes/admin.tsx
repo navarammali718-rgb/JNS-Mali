@@ -21,7 +21,7 @@ const navItems = [
   { to: "/admin/products" as const, label: "Products", icon: Package },
   { to: "/admin/categories" as const, label: "Categories", icon: Tag },
   { to: "/admin/orders" as const, label: "Orders", icon: ShoppingBag },
-  { to: "/admin/storefront" as const, label: "Storefront", icon: Store },
+  { to: "/admin/storefront" as const, label: "Settings", icon: Store },
 ];
 
 export const Route = createFileRoute("/admin")({
@@ -53,22 +53,23 @@ function AdminLayout() {
 
   if (!isLoaded || checkingAuth) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="size-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
 
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
-  const isAdmin = isSignedIn && adminEmails.includes(email);
+  const PERMANENT_ADMINS = ["sanjayparihar0625@gmail.com", "navarammali718@gmail.com", "sanjay@san4u.in"];
+  const isAdmin = isSignedIn && (adminEmails.includes(email) || PERMANENT_ADMINS.includes(email));
 
   if (!isSignedIn) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-black text-white">Admin Panel</h1>
-            <p className="mt-2 text-slate-400">Sign in to access the dashboard</p>
+            <h1 className="text-3xl font-black text-slate-900">Admin Panel</h1>
+            <p className="mt-2 text-slate-500">Sign in to access the dashboard</p>
           </div>
           <div className="overflow-hidden rounded-2xl bg-white p-6 shadow-2xl">
             <SignIn routing="virtual" />
@@ -80,14 +81,14 @@ function AdminLayout() {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center">
-        <div className="rounded-2xl bg-slate-900 p-10 shadow-2xl border border-slate-800">
-          <div className="mx-auto mb-4 grid size-16 place-items-center rounded-full bg-red-500/20">
-            <X className="size-8 text-red-400" />
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 text-center">
+        <div className="rounded-2xl bg-white p-10 shadow-2xl border border-slate-200">
+          <div className="mx-auto mb-4 grid size-16 place-items-center rounded-full bg-red-500/10">
+            <X className="size-8 text-red-500" />
           </div>
-          <h1 className="text-2xl font-black text-white">Access Denied</h1>
-          <p className="mt-3 text-slate-400">
-            You are signed in as <span className="font-semibold text-slate-300">{email}</span>.<br />
+          <h1 className="text-2xl font-black text-slate-900">Access Denied</h1>
+          <p className="mt-3 text-slate-500">
+            You are signed in as <span className="font-semibold text-slate-700">{email}</span>.<br />
             Only the authorized admin can access this panel.
           </p>
           <Button
@@ -103,23 +104,21 @@ function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 border-r border-slate-800 transition-transform duration-200 lg:static lg:translate-x-0 ${sideOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-white border-r border-slate-200 shadow-sm transition-transform duration-200 lg:static lg:translate-x-0 ${sideOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-4">
-          <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground font-black text-sm">
-            JM
-          </div>
+        <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4">
+          <img src="/logo.jpeg" alt="Logo" className="size-9 rounded-lg object-cover bg-white shadow-sm" />
           <div>
-            <p className="text-sm font-bold leading-none">JNS MALI</p>
-            <p className="text-xs text-slate-400">Admin Panel</p>
+            <p className="text-sm font-bold leading-none text-slate-900">JNS MALI</p>
+            <p className="text-xs text-slate-500">Admin Panel</p>
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto lg:hidden text-slate-400 hover:text-white"
+            className="ml-auto lg:hidden text-slate-500 hover:text-slate-900"
             onClick={() => setSideOpen(false)}
           >
             <X className="size-4" />
@@ -132,30 +131,30 @@ function AdminLayout() {
               key={to}
               to={to}
               onClick={() => setSideOpen(false)}
-              activeProps={{ className: "bg-primary/20 text-primary font-bold" }}
+              activeProps={{ className: "bg-primary/10 text-primary font-bold" }}
               activeOptions={{ exact: !!exact }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
             >
               <Icon className="size-4 shrink-0" />
               {label}
-              <ChevronRight className="ml-auto size-3 opacity-40" />
+              <ChevronRight className="ml-auto size-3 opacity-30" />
             </Link>
           ))}
         </nav>
 
-        <div className="border-t border-slate-800 p-3">
-          <div className="mb-3 flex items-center gap-3 rounded-lg bg-slate-800 px-3 py-2">
-            <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-xs font-black text-primary-foreground">
+        <div className="border-t border-slate-200 p-3">
+          <div className="mb-3 flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2 border border-slate-100">
+            <div className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-black text-primary">
               {(user?.firstName?.[0] ?? email[0] ?? "A").toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-white">{user?.firstName ?? "Admin"}</p>
-              <p className="truncate text-[10px] text-slate-400">{email}</p>
+              <p className="truncate text-xs font-bold text-slate-900">{user?.firstName ?? "Admin"}</p>
+              <p className="truncate text-[10px] font-medium text-slate-500">{email}</p>
             </div>
           </div>
           <Button
             variant="ghost"
-            className="w-full justify-start text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="w-full justify-start text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             size="sm"
             onClick={() => signOut(() => navigate({ to: "/" }))}
           >
@@ -176,18 +175,18 @@ function AdminLayout() {
       {/* Main */}
       <div className="flex flex-1 flex-col min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-800 bg-slate-900 px-4 py-3">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 shadow-sm">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden text-slate-400 hover:text-white"
+            className="lg:hidden text-slate-500 hover:text-slate-900"
             onClick={() => setSideOpen(true)}
           >
             <Menu className="size-5" />
           </Button>
-          <span className="font-bold text-white">JNS MALI Admin</span>
-          <span className="ml-auto text-xs text-slate-400">
-            Signed in as <span className="text-slate-300 font-medium">{user?.firstName ?? email}</span>
+          <span className="font-bold text-slate-900">JNS MALI Admin</span>
+          <span className="ml-auto text-xs text-slate-500">
+            Signed in as <span className="text-slate-900 font-bold">{user?.firstName ?? email}</span>
           </span>
         </header>
 

@@ -42,7 +42,7 @@ function Cart() {
                 <img src={p.imageUrl || p.image} alt="" className="size-[90px] rounded-md object-cover" />
                 <div className="min-w-0">
                   <Link to="/product/$id" params={{ id: p.id }} className="font-bold">{p.name}</Link>
-                  <p className="text-xs text-muted-foreground">{p.pack}</p>
+                  <p className="text-xs text-muted-foreground">{p.unit || 'Piece'}{p.piecesPerUnit > 1 ? ` (${p.piecesPerUnit} pcs)` : ''}</p>
                   <div className="mt-3 flex w-fit items-center rounded-md border border-input">
                     <Button variant="ghost" size="icon" onClick={() => setQty(p.id, (cart[p.id] ?? 0) - 1)}><Minus /></Button>
                     <b className="w-7 text-center">{cart[p.id] ?? 0}</b>

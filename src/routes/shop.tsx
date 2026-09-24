@@ -41,7 +41,7 @@ function Shop() {
       const matchQ = !search.q || p.name.toLowerCase().includes(search.q.toLowerCase());
       const match100 = !under100 || p.price < 100;
       const match250 = !under250 || (p.price >= 100 && p.price <= 250);
-      const matchStock = !inStock || p.stock > 0;
+      const matchStock = !inStock || p.isAvailable !== false;
       
       // If both price filters are checked, OR them together, else AND them with rest
       let matchPrice = true;
@@ -80,12 +80,12 @@ function Shop() {
         </label>
       </div>
 
-      <div className="mt-7 grid gap-6 lg:grid-cols-[220px_1fr]">
-        <aside>
+      <div className="mt-7 grid gap-6 lg:grid-cols-[220px_1fr] min-w-0">
+        <aside className="min-w-0">
           <div className="mb-3 flex items-center gap-2 font-bold"><SlidersHorizontal className="size-4"/> Categories</div>
-          <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col">
+          <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col scrollbar-hide">
             {[{slug: 'all', name: 'All products'}, ...categories].map(c => 
-              <Button key={c.slug} variant={cat === c.slug ? 'default' : 'outline'} className="justify-start" onClick={() => setCat(c.slug)}>
+              <Button key={c.slug} variant={cat === c.slug ? 'default' : 'outline'} className="justify-start shrink-0" onClick={() => setCat(c.slug)}>
                 {c.name}
               </Button>
             )}
@@ -95,7 +95,7 @@ function Shop() {
             <label className="mt-3 block text-sm"><input type="checkbox" className="mr-2" checked={under100} onChange={e => setUnder100(e.target.checked)}/>Under ₹100</label>
             <label className="mt-2 block text-sm"><input type="checkbox" className="mr-2" checked={under250} onChange={e => setUnder250(e.target.checked)}/>₹100–₹250</label>
             <b className="mt-6 block">Availability</b>
-            <label className="mt-3 block text-sm"><input type="checkbox" checked={inStock} onChange={e => setInStock(e.target.checked)} className="mr-2"/>In stock</label>
+            <label className="mt-3 block text-sm"><input type="checkbox" checked={inStock} onChange={e => setInStock(e.target.checked)} className="mr-2"/>Available only</label>
           </div>
         </aside>
         

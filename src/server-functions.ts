@@ -28,6 +28,14 @@ export const getCloudinarySignatureFn = createServerFn({ method: "POST" }).handl
 
 export const getProductsFn = createServerFn({ method: "GET" }).handler(async () => {
   await connectDB();
+  // Only return products that are available (or where isAvailable is not explicitly false)
+  const products = await Product.find({ isAvailable: { $ne: false } }).sort({ createdAt: -1 }).lean().exec();
+  return JSON.parse(JSON.stringify(products));
+});
+
+export const getAdminProductsFn = createServerFn({ method: "GET" }).handler(async () => {
+  await connectDB();
+  // Return all products including unavailable ones for the admin panel
   const products = await Product.find({}).sort({ createdAt: -1 }).lean().exec();
   return JSON.parse(JSON.stringify(products));
 });
@@ -55,7 +63,7 @@ export const updateProductFn = createServerFn({ method: "POST" })
   .validator((data: { id: string, updates: any }) => data)
   .handler(async ({ data }) => {
     await connectDB();
-    const updated = await Product.findByIdAndUpdate(data.id, data.updates, { new: true }).lean().exec();
+    const updated = await Product.findByIdAndUpdate(data.id, data.updates, { returnDocument: 'after' }).lean().exec();
     return JSON.parse(JSON.stringify(updated));
 });
 
@@ -98,11 +106,6 @@ export const createOrderFn = createServerFn({ method: "POST" })
     const order = new Order(data);
     await order.save();
     
-    // Reduce stock
-    for (const item of data.items) {
-      await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } }).exec();
-    }
-    
     return JSON.parse(JSON.stringify(order));
 });
 
@@ -124,7 +127,7 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
   .validator((data: { id: string, status: string }) => data)
   .handler(async ({ data }) => {
     await connectDB();
-    const order = await Order.findByIdAndUpdate(data.id, { status: data.status }, { new: true }).exec();
+    const order = await Order.findByIdAndUpdate(data.id, { status: data.status }, { returnDocument: 'after' }).exec();
     return JSON.parse(JSON.stringify(order));
 });
 
@@ -143,7 +146,7 @@ export const updateStorefrontFn = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data }) => {
     await connectDB();
-    const updated = await Storefront.findOneAndUpdate({}, data, { upsert: true, new: true }).lean().exec();
+    const updated = await Storefront.findOneAndUpdate({}, data, { upsert: true, returnDocument: 'after' }).lean().exec();
     return JSON.parse(JSON.stringify(updated));
 });
 
@@ -166,7 +169,7 @@ export const updateCategoryFn = createServerFn({ method: "POST" })
   .validator((data: { id: string, updates: any }) => data)
   .handler(async ({ data }) => {
     await connectDB();
-    const updated = await Category.findByIdAndUpdate(data.id, data.updates, { new: true }).lean().exec();
+    const updated = await Category.findByIdAndUpdate(data.id, data.updates, { returnDocument: 'after' }).lean().exec();
     return JSON.parse(JSON.stringify(updated));
 });
 

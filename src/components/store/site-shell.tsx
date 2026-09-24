@@ -41,45 +41,60 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3">
-            {/* Mobile menu toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setMenu(!menu)}
-              aria-label="Toggle menu"
-            >
-              {menu ? <X /> : <Menu />}
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-y-3 py-3 sm:grid sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-6">
 
-            {/* Logo */}
-            <Link to="/" className="hidden shrink-0 items-center gap-2 sm:flex">
-              <span className="grid size-10 place-items-center rounded-lg bg-primary text-xl font-black text-primary-foreground">
-                JM
-              </span>
-              <span>
-                <b className="block text-xl leading-none">JNS MALI</b>
-                <small className="text-[10px] font-bold uppercase text-muted-foreground">Har ghar ka saathi</small>
-              </span>
-            </Link>
+            {/* Top row mobile: Hamburger + Logo + Icons */}
+            <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start sm:gap-4">
+              <div className="flex items-center gap-2">
+                {/* Mobile menu toggle */}
+                <Button variant="ghost" size="icon" className="lg:hidden -ml-2" onClick={() => setMenu(!menu)} aria-label="Toggle menu">
+                  {menu ? <X /> : <Menu />}
+                </Button>
 
-            {/* Search */}
-            <form onSubmit={search} className="mx-auto flex w-full max-w-2xl">
+                {/* Logo */}
+                <Link to="/" className="flex shrink-0 items-center gap-2">
+                  <img src="/logo.jpeg" alt="JNS MALI Logo" className="size-9 rounded-lg object-cover sm:size-10 bg-white" />
+                  <span className="hidden sm:block">
+                    <b className="block text-xl leading-none">JNS MALI</b>
+                    <small className="text-[10px] font-bold uppercase text-muted-foreground">Har ghar ka saathi</small>
+                  </span>
+                </Link>
+              </div>
+
+              {/* Mobile Icons */}
+              <div className="flex items-center gap-1 sm:hidden -mr-2">
+                <Button asChild variant="ghost" size="icon">
+                  <Link to="/wishlist"><Heart className="size-5" /></Link>
+                </Button>
+                <Button asChild variant="ghost" size="icon" className="relative">
+                  <Link to="/cart">
+                    <ShoppingCart className="size-5" />
+                    {mounted && cartCount > 0 && (
+                      <span className="absolute right-0 top-0 grid size-4 place-items-center rounded-full bg-primary text-[9px] text-primary-foreground">
+                        {cartCount}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Search - Full width on mobile, middle column on desktop */}
+            <form onSubmit={search} className="flex w-full order-last sm:order-none sm:mx-auto sm:max-w-2xl">
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search scrubbers, loofahs, brushes…"
                 aria-label="Search products"
-                className="h-11 rounded-r-none border-r-0 bg-muted/60"
+                className="h-10 rounded-r-none border-r-0 bg-muted/60 sm:h-11"
               />
-              <Button type="submit" className="h-11 rounded-l-none px-4" aria-label="Search">
-                <Search />
+              <Button type="submit" className="h-10 rounded-l-none px-4 sm:h-11" aria-label="Search">
+                <Search className="size-4 sm:size-5" />
               </Button>
             </form>
 
-            {/* Nav icons */}
-            <nav className="flex items-center justify-end gap-0.5">
+            {/* Desktop Icons */}
+            <nav className="hidden sm:flex items-center justify-end gap-1">
               <Button asChild variant="ghost" size="icon">
                 <Link to="/wishlist" aria-label={`Wishlist with ${wishlist.length} items`}>
                   <Heart />
@@ -88,7 +103,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
               {/* Auth button */}
               {mounted && isSignedIn ? (
-                <div className="relative hidden sm:block group">
+                <div className="relative group">
                   <Button asChild variant="ghost" size="icon">
                     <Link to="/account" aria-label="Account">
                       {user?.imageUrl ? (
@@ -100,7 +115,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   </Button>
                 </div>
               ) : (
-                <Button asChild variant="ghost" size="icon" className="hidden sm:inline-flex">
+                <Button asChild variant="ghost" size="icon">
                   <Link to="/account" aria-label="Sign in">
                     <UserRound />
                   </Link>
@@ -108,12 +123,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               )}
 
               {/* Cart */}
-              <Button asChild variant="secondary" className="relative px-3">
+              <Button asChild variant="secondary" className="relative px-3 ml-1">
                 <Link to="/cart">
-                  <ShoppingCart />
-                  <span className="hidden sm:inline">Cart</span>
+                  <ShoppingCart className="mr-1.5 size-4" />
+                  <span>Cart</span>
                   {mounted && cartCount > 0 && (
-                    <span className="grid size-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    <span className="grid size-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground ml-2">
                       {cartCount}
                     </span>
                   )}
@@ -140,7 +155,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <Link
               to="/orders"
               onClick={() => setMenu(false)}
-              className="ml-auto flex items-center gap-2 px-3 py-2 text-sm font-semibold"
+              className="lg:ml-auto flex items-center gap-2 px-3 py-2 text-sm font-semibold text-foreground/80 hover:text-primary"
             >
               <Package className="size-4" />
               Track order
@@ -173,11 +188,12 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <Footer />
 
       {/* Mobile bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-background p-1 sm:hidden">
-        <Link to="/" className="p-2 text-center text-xs font-semibold">Home</Link>
-        <Link to="/shop" className="p-2 text-center text-xs font-semibold">Shop</Link>
-        <Link to="/wishlist" className="p-2 text-center text-xs font-semibold">Wishlist</Link>
-        <Link to="/cart" className="p-2 text-center text-xs font-semibold">
+      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background p-1 sm:hidden">
+        <Link to="/" className="p-2 text-center text-xs font-semibold text-foreground/80 hover:text-primary">Home</Link>
+        <Link to="/shop" className="p-2 text-center text-xs font-semibold text-foreground/80 hover:text-primary">Shop</Link>
+        <Link to="/orders" className="p-2 text-center text-xs font-semibold text-foreground/80 hover:text-primary">Orders</Link>
+        <Link to="/wishlist" className="p-2 text-center text-xs font-semibold text-foreground/80 hover:text-primary">Wishlist</Link>
+        <Link to="/cart" className="p-2 text-center text-xs font-semibold text-foreground/80 hover:text-primary">
           Cart {mounted && cartCount > 0 && `(${cartCount})`}
         </Link>
       </div>

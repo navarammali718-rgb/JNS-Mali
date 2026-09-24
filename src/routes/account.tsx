@@ -45,7 +45,7 @@ function Page() {
           <h1 className="text-3xl font-black">Sign in to your account</h1>
           <p className="mt-2 text-muted-foreground">Sign in with Google to manage your orders and wishlist.</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl border border-border bg-card p-6 flex justify-center">
           <SignIn routing="virtual" />
         </div>
       </main>

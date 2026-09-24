@@ -69,7 +69,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const product = products.find(p => p.id === id);
     if (!product) return;
     const currentQty = cart[id] ?? 0;
-    const newQty = Math.min(product.stock, currentQty + qty);
+    const newQty = currentQty + qty;
     
     if (newQty > 0) {
       const newCart = { ...cart, [id]: newQty };
@@ -84,7 +84,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (qty <= 0) {
       delete n[id];
     } else {
-      n[id] = Math.min(product.stock, qty);
+      n[id] = qty;
     }
     updateCart(n);
   };

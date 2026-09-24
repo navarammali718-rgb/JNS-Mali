@@ -81,7 +81,7 @@ function AdminCategories() {
   }
 
   async function handleSave() {
-    if (!form.name.trim()) { setError("Name is required."); return; }
+    if (!form.name.trim()) { setError("Name is required."); document.getElementById('category-modal')?.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     const slug = form.slug.trim() || slugify(form.name);
     setSaving(true);
     setError("");
@@ -96,6 +96,7 @@ function AdminCategories() {
       await loadAll();
     } catch (e: any) {
       setError(e?.message ?? "Save failed.");
+      document.getElementById('category-modal')?.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
     }
@@ -116,8 +117,8 @@ function AdminCategories() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-white">Categories</h1>
-          <p className="mt-1 text-slate-400">{categories.length} categories</p>
+          <h1 className="text-3xl font-black text-slate-900">Categories</h1>
+          <p className="mt-1 font-medium text-slate-500">{categories.length} categories</p>
         </div>
         <Button onClick={openAdd} className="gap-2">
           <Plus className="size-4" /> Add category
@@ -129,33 +130,33 @@ function AdminCategories() {
           <Loader2 className="size-10 animate-spin text-primary" />
         </div>
       ) : categories.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-700 py-20 text-center">
-          <Tag className="mx-auto mb-4 size-12 text-slate-600" />
-          <p className="text-slate-400">No categories yet. Add your first one!</p>
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white shadow-sm py-20 text-center">
+          <Tag className="mx-auto mb-4 size-12 text-slate-400" />
+          <p className="font-medium text-slate-500">No categories yet. Add your first one!</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((c) => (
-            <div key={c.id} className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+            <div key={c.id} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition">
               {c.image ? (
                 <img src={c.image} alt={c.name} className="aspect-[16/7] w-full object-cover" />
               ) : (
-                <div className="aspect-[16/7] w-full bg-slate-800 grid place-items-center">
-                  <Tag className="size-8 text-slate-600" />
+                <div className="aspect-[16/7] w-full bg-slate-50 grid place-items-center">
+                  <Tag className="size-8 text-slate-400" />
                 </div>
               )}
               <div className="p-4">
-                <h3 className="font-bold text-white">{c.name}</h3>
-                <p className="mt-1 text-xs text-slate-400">slug: {c.slug}</p>
-                {c.blurb && <p className="mt-2 text-sm text-slate-300">{c.blurb}</p>}
+                <h3 className="font-bold text-slate-900">{c.name}</h3>
+                <p className="mt-1 text-xs font-medium text-slate-500">slug: {c.slug}</p>
+                {c.blurb && <p className="mt-2 text-sm text-slate-600">{c.blurb}</p>}
                 <div className="mt-4 flex justify-end gap-2">
-                  <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => openEdit(c)}>
+                  <Button size="sm" variant="ghost" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" onClick={() => openEdit(c)}>
                     <Pencil className="mr-1.5 size-3.5" /> Edit
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                    className="text-red-500 hover:bg-red-50 hover:text-red-600"
                     onClick={() => handleDelete(c.id)}
                     disabled={deleting === c.id}
                   >
@@ -170,11 +171,11 @@ function AdminCategories() {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
-              <h2 className="text-xl font-black text-white">{editId ? "Edit Category" : "Add Category"}</h2>
-              <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6 backdrop-blur-sm">
+          <div id="category-modal" className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-y-auto max-h-full">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h2 className="text-xl font-black text-slate-900">{editId ? "Edit Category" : "Add Category"}</h2>
+              <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-900 hover:bg-slate-100" onClick={() => setShowModal(false)}>
                 <X className="size-5" />
               </Button>
             </div>
@@ -184,18 +185,18 @@ function AdminCategories() {
 
               {/* Image */}
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">Category Image</label>
+                <label className="mb-2 block text-sm font-bold text-slate-700">Category Image</label>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} />
-                <div className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 p-6 hover:border-primary" onClick={() => fileRef.current?.click()}>
+                <div className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 hover:border-primary hover:bg-primary/5 transition" onClick={() => fileRef.current?.click()}>
                   {uploading ? <Loader2 className="size-8 animate-spin text-primary" /> :
-                    form.image ? <img src={form.image} alt="" className="size-20 rounded-lg object-cover" /> :
-                    <><ImagePlus className="size-8 text-slate-600" /><p className="mt-2 text-sm text-slate-500">Upload image</p></>}
+                    form.image ? <img src={form.image} alt="" className="size-20 rounded-lg object-cover shadow-sm" /> :
+                    <><ImagePlus className="size-8 text-slate-400" /><p className="mt-2 text-sm font-medium text-slate-500">Upload image</p></>}
                 </div>
-                <Input value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} placeholder="Or paste image URL" className="mt-2 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
+                <Input value={form.image} onChange={(e) => setForm((f) => ({ ...f, image: e.target.value }))} placeholder="Or paste image URL" className="mt-2 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm" />
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-300">Name *</label>
+                <label className="mb-1.5 block text-sm font-bold text-slate-700">Name *</label>
                 <Input
                   value={form.name}
                   onChange={(e) => {
@@ -203,20 +204,20 @@ function AdminCategories() {
                     setForm((f) => ({ ...f, name, slug: f.slug || slugify(name) }));
                   }}
                   placeholder="Kitchen Cleaning"
-                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
                 />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-300">Slug</label>
-                <Input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} placeholder="kitchen-cleaning" className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
+                <label className="mb-1.5 block text-sm font-bold text-slate-700">Slug</label>
+                <Input value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} placeholder="kitchen-cleaning" className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm" />
               </div>
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-300">Description (blurb)</label>
-                <Input value={form.blurb} onChange={(e) => setForm((f) => ({ ...f, blurb: e.target.value }))} placeholder="Scrubbers, pads & brushes" className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
+                <label className="mb-1.5 block text-sm font-bold text-slate-700">Description (blurb)</label>
+                <Input value={form.blurb} onChange={(e) => setForm((f) => ({ ...f, blurb: e.target.value }))} placeholder="Scrubbers, pads & brushes" className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm" />
               </div>
 
               <div className="flex gap-3 pt-2">
-                <Button variant="ghost" className="flex-1 text-slate-400" onClick={() => setShowModal(false)}>Cancel</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)}>Cancel</Button>
                 <Button className="flex-1" onClick={handleSave} disabled={saving}>
                   {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
                   {editId ? "Save changes" : "Create category"}
