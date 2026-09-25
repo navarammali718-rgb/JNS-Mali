@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { admin } from "./lib/firebase-admin";
+import { messaging } from "./lib/fcm";
 import { connectDB } from "./lib/db";
 import { Product } from "./lib/models";
 import { v2 as cloudinary } from "cloudinary";
@@ -118,7 +118,7 @@ export const createOrderFn = createServerFn({ method: "POST" })
           },
           tokens: storefront.adminFcmTokens, // Send to all registered admin devices
         };
-        await admin.messaging().sendEachForMulticast(message);
+        await messaging.sendEachForMulticast(message);
         console.log("Push notification sent to admins!");
       }
     } catch (e) {
