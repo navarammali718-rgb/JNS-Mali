@@ -12,6 +12,7 @@ import { ClerkProvider } from "@clerk/clerk-react";
 import { useEffect, type ReactNode } from "react";
 import { StoreProvider } from "@/components/store/store-context";
 import { SiteShell } from "@/components/store/site-shell";
+import { Capacitor } from "@capacitor/core";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -119,8 +120,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
   const location = useRouterState({ select: (s) => s.location.pathname });
   const isAdmin = location.startsWith("/admin");
+
+  useEffect(() => {
+    // Force the native Android app to ALWAYS go to the Admin dashboard
+    if (Capacitor.isNativePlatform() && location === "/") {
+      router.navigate({ to: "/admin", replace: true });
+    }
+  }, [location, router]);
 
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
