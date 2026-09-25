@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">JNS Mali</string>
+    <string name="title_activity_main">JNS Mali</string>
+    <string name="package_name">com.jnsmali.admin</string>
+    <string name="custom_url_scheme">com.jnsmali.admin</string>
+</resources>

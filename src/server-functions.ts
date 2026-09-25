@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { admin } from "./lib/firebase-admin";
 import { connectDB } from "./lib/db";
 import { Product } from "./lib/models";
 import { v2 as cloudinary } from "cloudinary";
@@ -106,6 +107,24 @@ export const createOrderFn = createServerFn({ method: "POST" })
     const order = new Order(data);
     await order.save();
     
+    // Send push notification to admin
+    try {
+      const storefront = await Storefront.findOne({}).lean().exec();
+      if (storefront && storefront.adminFcmTokens && storefront.adminFcmTokens.length > 0) {
+        const message = {
+          notification: {
+            title: 'New Order Received! 🛍️',
+            body: `Order total: ₹${order.totalAmount} from ${data.shippingDetails?.fullName || 'Customer'}`,
+          },
+          tokens: storefront.adminFcmTokens, // Send to all registered admin devices
+        };
+        await admin.messaging().sendEachForMulticast(message);
+        console.log("Push notification sent to admins!");
+      }
+    } catch (e) {
+      console.error("Failed to send push notification:", e);
+    }
+    
     return JSON.parse(JSON.stringify(order));
 });
 
@@ -148,6 +167,19 @@ export const updateStorefrontFn = createServerFn({ method: "POST" })
     await connectDB();
     const updated = await Storefront.findOneAndUpdate({}, data, { upsert: true, returnDocument: 'after' }).lean().exec();
     return JSON.parse(JSON.stringify(updated));
+});
+
+export const registerAdminFcmTokenFn = createServerFn({ method: "POST" })
+  .validator((data: { token: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    // Add token to array if it doesn't already exist
+    const updated = await Storefront.findOneAndUpdate(
+      {}, 
+      { $addToSet: { adminFcmTokens: data.token } },
+      { upsert: true, returnDocument: 'after' }
+    ).lean().exec();
+    return { success: true };
 });
 
 export const getCategoriesFn = createServerFn({ method: "GET" }).handler(async () => {

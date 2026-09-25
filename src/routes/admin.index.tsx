@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Package, Tag, ShoppingBag, TrendingUp, Clock, CheckCircle, Loader2, ArrowRight } from "lucide-react";
-import { getAdminProductsFn, getCategoriesFn, getAllOrdersFn } from "@/server-functions";
+import { getAdminProductsFn, getCategoriesFn, getAllOrdersFn, registerAdminFcmTokenFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 
 export const Route = createFileRoute("/admin/")({
@@ -46,7 +46,33 @@ function AdminDashboard() {
         setIsLoading(false);
       }
     }
+    
+    async function setupPush() {
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const { Capacitor } = await import('@capacitor/core');
+        
+        if (Capacitor.isNativePlatform()) {
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive !== 'granted') {
+            throw new Error('User denied permissions!');
+          }
+          await PushNotifications.register();
+          PushNotifications.addListener('registration', async (token) => {
+            console.log("Got FCM token", token.value);
+            await registerAdminFcmTokenFn({ data: { token: token.value } });
+          });
+        }
+      } catch (e) {
+        console.error("Push setup failed", e);
+      }
+    }
+    
     load();
+    setupPush();
   }, []);
 
   if (isLoading) {

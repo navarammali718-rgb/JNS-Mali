@@ -43,6 +43,7 @@ const storefrontSchema = new mongoose.Schema({
   heroText: { type: String, default: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices." },
   heroImage: { type: String },
   adminEmails: { type: [String], default: ["sanjayparihar0625@gmail.com"] },
+  adminFcmTokens: { type: [String], default: [] },
   adminLocationLat: { type: Number, default: 13.0285 }, // Yeshwanthpur, Bangalore
   adminLocationLng: { type: Number, default: 77.5462 },
   adminLocationAddress: { type: String, default: "Yeshwanthpur, Bengaluru, Karnataka, India" },
