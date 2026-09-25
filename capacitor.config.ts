@@ -7,6 +7,11 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://jns-mali.netlify.app/admin',
     cleartext: true
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
+    }
   }
 };
 
