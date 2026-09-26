@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     url: 'https://jns-mali.netlify.app/admin',
-    cleartext: true
+    cleartext: true,
+    allowNavigation: ['jns-mali.netlify.app']
   },
   plugins: {
     PushNotifications: {
