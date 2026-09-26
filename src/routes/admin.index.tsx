@@ -60,11 +60,17 @@ function AdminDashboard() {
           if (permStatus.receive !== 'granted') {
             throw new Error('User denied permissions!');
           }
-          await PushNotifications.register();
           PushNotifications.addListener('registration', async (token) => {
             console.log("Got FCM token", token.value);
             await registerAdminFcmTokenFn({ data: { token: token.value } });
           });
+          
+          PushNotifications.addListener('pushNotificationReceived', () => {
+            // When a notification is received while the app is open, instantly refresh data
+            load();
+          });
+          
+          await PushNotifications.register();
         }
       } catch (e) {
         console.error("Push setup failed", e);
