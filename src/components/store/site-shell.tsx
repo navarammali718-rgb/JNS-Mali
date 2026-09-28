@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState, useRouter } from "@tanstack/react-router";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { Heart, Home, Menu, Package, Search, ShoppingBag, ShoppingCart, UserRound, X, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const [q, setQ] = useState("");
   const [mounted, setMounted] = useState(false);
   const navigate = useNavigate();
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => { setMounted(true); }, []);
@@ -167,9 +169,23 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {children}
-
-      <Footer />
+      <PullToRefresh
+        onRefresh={async () => {
+          await Promise.all([
+            useStore.getState?.().refreshStorefront?.(), // Just in case it's exposed
+            router.invalidate(),
+          ]).catch(() => {});
+        }}
+        pullingContent={<div className="text-center py-4 text-xs font-bold text-muted-foreground">Pull down to refresh</div>}
+        refreshingContent={<div className="text-center py-4 text-xs font-bold text-primary">Refreshing...</div>}
+      >
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
+        </div>
+      </PullToRefresh>
 
       {/* ─── Mobile bottom navigation bar ─── */}
       <div
