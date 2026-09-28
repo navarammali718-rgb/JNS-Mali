@@ -190,7 +190,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       {/* ─── Mobile bottom navigation bar ─── */}
       <div
         className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur sm:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {[
           { to: "/" as const, icon: Home, label: "Home" },

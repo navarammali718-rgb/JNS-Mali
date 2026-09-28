@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'JNS Mali',
   webDir: 'dist',
   server: {
-    url: 'https://jns-mali.netlify.app',
+    url: 'https://jnsmali.netlify.app',
     cleartext: true,
-    allowNavigation: ['jns-mali.netlify.app']
+    allowNavigation: ['jnsmali.netlify.app']
   },
   plugins: {
     PushNotifications: {
