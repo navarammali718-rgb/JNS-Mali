@@ -15,7 +15,7 @@ const nav = [
 ];
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
-  const { cartCount, wishlist, storefront } = useStore();
+  const { cartCount, wishlist, storefront, refreshStorefront } = useStore();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [menu, setMenu] = useState(false);
@@ -172,7 +172,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <PullToRefresh
         onRefresh={async () => {
           await Promise.all([
-            useStore.getState?.().refreshStorefront?.(), // Just in case it's exposed
+            refreshStorefront?.(), // Called directly from the useStore hook destructure
             router.invalidate(),
           ]).catch(() => {});
         }}
