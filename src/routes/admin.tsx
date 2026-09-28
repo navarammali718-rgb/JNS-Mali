@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useUser, useClerk, SignIn } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
+import PullToRefresh from 'react-simple-pull-to-refresh';
 import {
   LayoutDashboard,
   Package,
@@ -190,8 +191,19 @@ function AdminLayout() {
           </span>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-slate-50">
+          <PullToRefresh
+            onRefresh={async () => {
+              window.location.reload();
+            }}
+            pullingContent={<div className="text-center py-4 text-xs font-bold text-slate-500">Pull down to refresh</div>}
+            refreshingContent={<div className="text-center py-4 text-xs font-bold text-primary">Refreshing...</div>}
+            resistance={2}
+          >
+            <div className="p-4 sm:p-6 min-h-[calc(100vh-60px)]">
+              <Outlet />
+            </div>
+          </PullToRefresh>
         </main>
       </div>
     </div>
