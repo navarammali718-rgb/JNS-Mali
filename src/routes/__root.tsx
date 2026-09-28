@@ -125,8 +125,10 @@ function RootComponent() {
   const isAdmin = location.startsWith("/admin");
 
   useEffect(() => {
-    // Force the native Android app to ALWAYS go to the Admin dashboard
-    if (Capacitor.isNativePlatform() && location === "/") {
+    // Check if it's the native app AND specifically the Admin APK
+    const isNativeAdmin = Capacitor.isNativePlatform() && navigator.userAgent.includes("JNS_ADMIN");
+    
+    if (isNativeAdmin && location === "/") {
       router.navigate({ to: "/admin", replace: true });
     }
   }, [location, router]);

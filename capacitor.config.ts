@@ -13,7 +13,8 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]
     }
-  }
+  },
+  appendUserAgent: "JNS_ADMIN"
 };
 
 export default config;
