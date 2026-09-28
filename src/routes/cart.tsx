@@ -19,9 +19,11 @@ export const Route = createFileRoute('/cart')({
 });
 
 function Cart() {
-  const { cart, setQty, subtotal, products, isProductsLoading } = useStore();
+  const { cart, setQty, subtotal, products, isProductsLoading, storefront } = useStore();
   const items = products.filter(p => cart[p.id]);
-  const delivery = subtotal >= 499 ? 0 : 49;
+  const threshold = storefront?.freeDeliveryThreshold ?? 499;
+  const baseDelivery = storefront?.deliveryFee ?? 49;
+  const delivery = subtotal >= threshold ? 0 : baseDelivery;
 
   if (isProductsLoading) {
     return (
@@ -59,12 +61,12 @@ function Cart() {
           <aside className="h-fit rounded-lg border border-border bg-card p-5">
             <h2 className="text-xl font-black">Order summary</h2>
             <Row a="Subtotal" b={formatPrice(subtotal)} />
-            <Row a="Delivery" b={delivery ? '₹49' : 'FREE'} />
+            <Row a="Delivery" b={delivery ? `₹${baseDelivery}+` : 'FREE'} />
             <div className="mt-4 flex justify-between border-t border-border pt-4 text-lg font-black">
               <span>Total</span>
               <span>{formatPrice(subtotal + delivery)}</span>
             </div>
-            {subtotal < 499 && <p className="mt-3 rounded-md bg-secondary/60 p-3 text-xs font-semibold">Add {formatPrice(499 - subtotal)} more for free delivery.</p>}
+            {subtotal < threshold && <p className="mt-3 rounded-md bg-secondary/60 p-3 text-xs font-semibold">Add {formatPrice(threshold - subtotal)} more for free delivery.</p>}
             <Button asChild size="lg" className="mt-5 w-full">
               <Link to="/checkout">Proceed to checkout</Link>
             </Button>

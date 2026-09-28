@@ -14,7 +14,7 @@ const nav = [
 ];
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
-  const { cartCount, wishlist } = useStore();
+  const { cartCount, wishlist, storefront } = useStore();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
   const [menu, setMenu] = useState(false);
@@ -33,10 +33,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background text-foreground">
       {/* Announcement bar */}
       <div className="bg-primary px-4 py-2 text-center text-xs font-semibold text-primary-foreground">
-        Free delivery above ₹499 <span className="mx-2 opacity-60">•</span> COD available{" "}
-        <span className="hidden sm:inline">
-          <span className="mx-2 opacity-60">•</span> Extra savings on bulk orders
-        </span>
+        {storefront?.announcement || "Free delivery on all orders"}
       </div>
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">

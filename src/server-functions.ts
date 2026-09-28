@@ -110,19 +110,34 @@ export const createOrderFn = createServerFn({ method: "POST" })
     // Send push notification to admin
     try {
       const storefront = await Storefront.findOne({}).lean().exec();
-      if (storefront && storefront.adminFcmTokens && storefront.adminFcmTokens.length > 0) {
+      const tokens = storefront?.adminFcmTokens || [];
+      console.log(`[Push] Storefront found: ${!!storefront}, FCM tokens count: ${tokens.length}`);
+      
+      if (tokens.length > 0) {
         const message = {
           notification: {
             title: 'New Order Received! 🛍️',
             body: `Order total: ₹${order.totalAmount} from ${data.shippingDetails?.fullName || 'Customer'}`,
           },
-          tokens: storefront.adminFcmTokens, // Send to all registered admin devices
+          tokens: tokens,
         };
-        await messaging.sendEachForMulticast(message);
-        console.log("Push notification sent to admins!");
+        console.log('[Push] Sending multicast to', tokens.length, 'device(s)...');
+        const result = await messaging.sendEachForMulticast(message);
+        console.log(`[Push] ✅ Success: ${result.successCount}, ❌ Failures: ${result.failureCount}`);
+        
+        // Log individual failures for debugging
+        if (result.failureCount > 0) {
+          result.responses.forEach((resp, idx) => {
+            if (!resp.success) {
+              console.error(`[Push] Token #${idx} failed:`, resp.error?.code, resp.error?.message);
+            }
+          });
+        }
+      } else {
+        console.log('[Push] ⚠️ No FCM tokens registered — no admin has opened the app yet');
       }
     } catch (e) {
-      console.error("Failed to send push notification:", e);
+      console.error("[Push] ❌ Failed to send push notification:", e);
     }
     
     return JSON.parse(JSON.stringify(order));
@@ -211,4 +226,69 @@ export const deleteCategoryFn = createServerFn({ method: "POST" })
     await connectDB();
     await Category.findByIdAndDelete(data).exec();
     return { success: true };
+});
+
+// --- Push Notification Diagnostic ---
+export const testPushNotificationFn = createServerFn({ method: "POST" }).handler(async () => {
+  const results: Record<string, any> = {};
+  
+  // Step 1: Check env vars
+  results.envVars = {
+    FIREBASE_PROJECT_ID: process.env['FIREBASE_PROJECT_ID'] ? '✅ set' : '❌ MISSING',
+    FIREBASE_CLIENT_EMAIL: process.env['FIREBASE_CLIENT_EMAIL'] ? '✅ set' : '❌ MISSING',
+    FIREBASE_PRIVATE_KEY: process.env['FIREBASE_PRIVATE_KEY'] ? `✅ set (${process.env['FIREBASE_PRIVATE_KEY']!.length} chars)` : '❌ MISSING',
+  };
+  
+  // Step 2: Check Firebase init
+  try {
+    const { getApps } = await import('firebase-admin/app');
+    results.firebaseInitialized = getApps().length > 0 ? '✅ Yes' : '❌ No apps initialized';
+  } catch (e: any) {
+    results.firebaseInitialized = '❌ Error: ' + e.message;
+  }
+  
+  // Step 3: Check stored tokens
+  try {
+    await connectDB();
+    const storefront = await Storefront.findOne({}).lean().exec();
+    const tokens = storefront?.adminFcmTokens || [];
+    results.storedTokens = {
+      count: tokens.length,
+      tokens: tokens.map((t: string) => t.substring(0, 20) + '...'),
+    };
+  } catch (e: any) {
+    results.storedTokens = '❌ Error: ' + e.message;
+  }
+  
+  // Step 4: Try sending a test notification
+  try {
+    const storefront = await Storefront.findOne({}).lean().exec();
+    const tokens = storefront?.adminFcmTokens || [];
+    
+    if (tokens.length === 0) {
+      results.testSend = '⚠️ No tokens to send to — open the Android app first';
+    } else {
+      const testMessage = {
+        notification: {
+          title: '🔔 Test Notification',
+          body: 'Push notifications are working! This is a test from the diagnostic tool.',
+        },
+        tokens: tokens,
+      };
+      const result = await messaging.sendEachForMulticast(testMessage);
+      results.testSend = {
+        successCount: result.successCount,
+        failureCount: result.failureCount,
+        details: result.responses.map((r, i) => ({
+          tokenIndex: i,
+          success: r.success,
+          error: r.error ? { code: r.error.code, message: r.error.message } : null,
+        })),
+      };
+    }
+  } catch (e: any) {
+    results.testSend = '❌ Error: ' + e.message;
+  }
+  
+  return results;
 });

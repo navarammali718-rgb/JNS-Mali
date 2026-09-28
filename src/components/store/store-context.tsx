@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
-import { getProductsFn } from "@/server-functions";
+import { getProductsFn, getStorefrontFn } from "@/server-functions";
 
 type StoreValue = {
   cart: Record<string, number>;
@@ -13,21 +13,27 @@ type StoreValue = {
   subtotal: number;
   products: any[];
   isProductsLoading: boolean;
+  storefront: any;
 };
 
 const StoreContext = createContext<StoreValue | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
+  const [storefront, setStorefront] = useState<any>(null);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getProductsFn();
-        setProducts(data.map((p: any) => ({ ...p, id: p._id || p.id })));
+        const [prodData, storeData] = await Promise.all([
+          getProductsFn(),
+          getStorefrontFn()
+        ]);
+        setProducts(prodData.map((p: any) => ({ ...p, id: p._id || p.id })));
+        setStorefront(storeData);
       } catch (e) {
-        console.error("Failed to load products for store:", e);
+        console.error("Failed to load store data:", e);
       } finally {
         setIsProductsLoading(false);
       }
@@ -109,7 +115,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const subtotal = useMemo(() => products.reduce((s, p) => s + p.price * (cart[p.id] ?? 0), 0), [cart, products]);
 
   return (
-    <StoreContext.Provider value={{ cart, wishlist, add, setQty, remove, clearCart, toggleWish, cartCount, subtotal, products, isProductsLoading }}>
+    <StoreContext.Provider value={{ cart, wishlist, add, setQty, remove, clearCart, toggleWish, cartCount, subtotal, products, isProductsLoading, storefront }}>
       {children}
     </StoreContext.Provider>
   );
