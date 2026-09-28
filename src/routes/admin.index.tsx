@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Package, Tag, ShoppingBag, TrendingUp, Clock, CheckCircle, Loader2, ArrowRight, Bell } from "lucide-react";
-import { getAdminProductsFn, getCategoriesFn, getAllOrdersFn, registerAdminFcmTokenFn, testPushNotificationFn } from "@/server-functions";
+import { Package, Tag, ShoppingBag, TrendingUp, Clock, CheckCircle, Loader2, ArrowRight } from "lucide-react";
+import { getAdminProductsFn, getCategoriesFn, getAllOrdersFn, registerAdminFcmTokenFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
 
@@ -20,8 +20,6 @@ function AdminDashboard() {
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pushTestResult, setPushTestResult] = useState<any>(null);
-  const [pushTesting, setPushTesting] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -113,39 +111,7 @@ function AdminDashboard() {
           <h1 className="text-3xl font-black text-slate-900">Dashboard</h1>
           <p className="mt-1 font-medium text-slate-500">Welcome back! Here's what's happening with your store.</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2 self-start"
-          disabled={pushTesting}
-          onClick={async () => {
-            setPushTesting(true);
-            try {
-              const result = await testPushNotificationFn();
-              setPushTestResult(result);
-            } catch (e: any) {
-              setPushTestResult({ error: e.message });
-            } finally {
-              setPushTesting(false);
-            }
-          }}
-        >
-          {pushTesting ? <Loader2 className="size-4 animate-spin" /> : <Bell className="size-4" />}
-          Test Push Notification
-        </Button>
       </div>
-
-      {pushTestResult && (
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 text-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-slate-900">Push Notification Diagnostic</h3>
-            <button onClick={() => setPushTestResult(null)} className="text-xs text-slate-400 hover:text-slate-700">✕ Close</button>
-          </div>
-          <pre className="bg-slate-50 border border-slate-100 rounded-lg p-4 overflow-x-auto text-xs font-mono text-slate-700 whitespace-pre-wrap">
-            {JSON.stringify(pushTestResult, null, 2)}
-          </pre>
-        </div>
-      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
