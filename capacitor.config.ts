@@ -1,11 +1,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.jnsmali.admin',
-  appName: 'JNS Admin',
+  appId: 'com.jnsmali.app',
+  appName: 'JNS Mali',
   webDir: 'dist',
   server: {
-    url: 'https://jns-mali.netlify.app/admin',
+    url: 'https://jns-mali.netlify.app',
     cleartext: true,
     allowNavigation: ['jns-mali.netlify.app']
   },
@@ -13,8 +13,7 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]
     }
-  },
-  appendUserAgent: "JNS_ADMIN"
+  }
 };
 
 export default config;
