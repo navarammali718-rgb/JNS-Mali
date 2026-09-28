@@ -22,7 +22,7 @@ function Cart() {
   const { cart, setQty, subtotal, products, isProductsLoading, storefront } = useStore();
   const items = products.filter(p => cart[p.id]);
   const threshold = storefront?.freeDeliveryThreshold ?? 499;
-  const baseDelivery = storefront?.deliveryFee ?? 49;
+  const baseDelivery = storefront?.deliveryFee ?? 40;
   const delivery = subtotal >= threshold ? 0 : baseDelivery;
 
   if (isProductsLoading) {
@@ -79,6 +79,19 @@ function Cart() {
           <h2 className="mt-4 text-xl font-bold">Your cart is empty</h2>
           <Button asChild className="mt-5">
             <Link to="/shop">Start shopping</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile sticky checkout bar */}
+      {items.length > 0 && (
+        <div className="fixed inset-x-0 bottom-16 z-20 border-t border-border bg-background/95 backdrop-blur px-4 py-3 flex items-center justify-between gap-4 sm:hidden shadow-lg">
+          <div>
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-base font-black">{formatPrice(subtotal + delivery)}</p>
+          </div>
+          <Button asChild size="sm" className="flex-1">
+            <Link to="/checkout">Proceed to checkout</Link>
           </Button>
         </div>
       )}

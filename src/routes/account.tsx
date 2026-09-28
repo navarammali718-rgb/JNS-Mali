@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useUser, useClerk, SignIn } from "@clerk/clerk-react";
-import { Heart, MapPin, Package, UserRound, LogOut, Loader2, Lock } from "lucide-react";
+import { Heart, Package, ShoppingBag, UserRound, LogOut, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/account")({
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/account")({
 const links = [
   { icon: Package, title: "My orders", sub: "Track, return or buy again", to: "/orders" as const },
   { icon: Heart, title: "Wishlist", sub: "View your saved products", to: "/wishlist" as const },
-  { icon: MapPin, title: "Delivery addresses", sub: "Manage delivery addresses", to: "/orders" as const },
+  { icon: ShoppingBag, title: "Continue shopping", sub: "Browse our latest products", to: "/shop" as const },
 ];
 
 function Page() {

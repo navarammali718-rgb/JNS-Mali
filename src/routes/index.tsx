@@ -15,9 +15,6 @@ function Home(){
   const [isLoading, setIsLoading] = useState(true);
 
   // Fallback defaults if the user cleared them in DB
-  const heroSubtitle = storefront?.heroSubtitle || "Retail prices. Wholesale savings.";
-  const heroTitle = storefront?.heroTitle || "Everyday essentials that work hard at home.";
-  const heroText = storefront?.heroText || "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices.";
   const heroImage = storefront?.heroImage || hero;
   const freeDelivery = storefront?.freeDeliveryThreshold ?? 499;
 
@@ -36,25 +33,10 @@ function Home(){
   }, []);
 
   return <main>
-    <section className="bg-secondary/40">
-      <div className="mx-auto grid max-w-7xl items-center gap-5 px-4 py-4 lg:gap-7 lg:py-12 lg:grid-cols-[.9fr_1.1fr]">
-        <div className="hidden lg:block max-w-xl">
-          <p className="mb-3 text-sm font-extrabold uppercase text-primary">{heroSubtitle}</p>
-          <h1 className="text-4xl font-black leading-[1.05] sm:text-5xl lg:text-6xl">{heroTitle}</h1>
-          <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">{heroText}</p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Button asChild size="lg"><Link to="/shop">Shop all products <ArrowRight/></Link></Button>
-
-          </div>
-          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
-            <span>✓ COD available</span><span>✓ GST invoice</span><span>✓ 7-day returns</span>
-          </div>
-        </div>
-        
-
-
-        <div className="relative overflow-hidden rounded-xl bg-accent shadow-sm lg:max-h-none h-[180px] sm:h-[220px] lg:h-auto">
-          <img src={heroImage} alt="Colourful JNS MALI cleaning and household essentials" width={1600} height={1104} className="h-full w-full object-cover lg:aspect-[4/3]"/>
+    <section className="bg-secondary/40 pt-4 pb-2 lg:py-8">
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="relative overflow-hidden rounded-xl bg-accent shadow-sm h-[180px] sm:h-[220px] lg:h-[400px]">
+          <img src={heroImage} alt="Colourful JNS MALI cleaning and household essentials" width={1600} height={1104} className="h-full w-full object-cover"/>
           <div className="absolute bottom-3 left-3 rounded-md bg-background/95 px-3 py-2 lg:px-4 lg:py-3 shadow-lg">
             <p className="text-[10px] lg:text-xs font-semibold text-muted-foreground">Combo offer</p>
             <p className="text-xs sm:text-sm lg:text-base font-black">Kitchen Starter Pack · ₹249</p>
@@ -62,6 +44,7 @@ function Home(){
         </div>
       </div>
     </section>
+
 <section className="mx-auto max-w-7xl px-4 py-8 lg:py-12">
   <div className="flex items-end justify-between">
     <div>

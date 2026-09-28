@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createOrderFn, syncUserFn, getStorefrontFn } from "@/server-functions";
+import { createOrderFn, syncUserFn } from "@/server-functions";
 
 const MapPicker = lazy(() => import('@/components/MapPicker'));
 
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/checkout")({
 
 function Checkout() {
   const { isLoaded, isSignedIn, user } = useUser();
-  const { cart, products, subtotal, clearCart } = useStore();
+  const { cart, products, subtotal, clearCart, storefront: contextStorefront } = useStore();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -49,14 +49,13 @@ function Checkout() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
-  const [storefront, setStorefront] = useState<any>(null);
+  const storefront = contextStorefront;
   
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => { 
     setMounted(true);
-    getStorefrontFn().then(setStorefront).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -551,8 +550,8 @@ function Checkout() {
           )}
         </section>
 
-        {/* Order summary sidebar */}
-        <aside className="h-fit rounded-lg bg-muted p-5">
+        {/* Order summary sidebar — appears first on mobile, right on desktop */}
+        <aside className="h-fit rounded-lg bg-muted p-5 order-first lg:order-last">
           <h2 className="font-black">Order summary</h2>
           <div className="mt-4 space-y-2">
             {cartItems.map((item) => (

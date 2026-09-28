@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Heart, Minus, Plus, ShieldCheck, Star, Truck, Loader2 } from "lucide-react";
+import { Heart, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck, Loader2, Check } from "lucide-react";
 import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ function Product() {
   const [qty, setQty] = useState<string>("1");
   const [p, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -42,7 +43,8 @@ function Product() {
     if (isNaN(parsed) || parsed < 1) parsed = 1;
     if (p) {
       add(p.id, parsed);
-      navigate({ to: "/cart" });
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 3000);
     }
   };
 
@@ -92,25 +94,38 @@ function Product() {
                 let parsed = parseInt(qty) || 1;
                 setQty(String(Math.max(1, parsed - 1)));
               }}><Minus /></Button>
-              <input 
-                type="number" 
-                value={qty} 
-                onChange={(e) => setQty(e.target.value)} 
+              <input
+                type="number"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
                 onBlur={() => {
                   let parsed = parseInt(qty);
                   if (isNaN(parsed) || parsed < 1) parsed = 1;
                   setQty(String(parsed));
                 }}
-                className="w-12 text-center font-bold bg-transparent border-none focus:outline-none" 
-                style={{ appearance: "textfield", MozAppearance: "textfield" } as any} 
-                min="1" 
+                className="w-12 text-center font-bold bg-transparent border-none focus:outline-none appearance-none"
+                min="1"
               />
               <Button variant="ghost" size="icon" onClick={() => {
                 let parsed = parseInt(qty) || 1;
                 setQty(String(parsed + 1));
               }}><Plus /></Button>
             </div>
-            <Button size="lg" className="flex-1" onClick={handleAddToCart}>Add to cart</Button>
+            <Button
+              size="lg"
+              className="flex-1"
+              variant={addedToCart ? "secondary" : "default"}
+              onClick={handleAddToCart}
+            >
+              {addedToCart ? (
+                <><Check className="mr-2 size-4" />Added to cart!</>
+              ) : "Add to cart"}
+            </Button>
+            {addedToCart && (
+              <Button asChild variant="outline" size="lg">
+                <Link to="/cart"><ShoppingCart className="mr-2 size-4" />Go to Cart</Link>
+              </Button>
+            )}
             <Button variant="outline" size="icon" className="size-11" onClick={() => toggleWish(p.id)}>
               <Heart className={wishlist.includes(p.id) ? 'fill-primary text-primary' : ''} />
             </Button>

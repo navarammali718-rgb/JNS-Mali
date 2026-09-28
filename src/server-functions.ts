@@ -180,7 +180,11 @@ export const updateStorefrontFn = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data }) => {
     await connectDB();
-    const updated = await Storefront.findOneAndUpdate({}, data, { upsert: true, returnDocument: 'after' }).lean().exec();
+    const updated = await Storefront.findOneAndUpdate(
+      {},
+      { $set: data },
+      { upsert: true, new: true, returnDocument: 'after' }
+    ).lean().exec();
     return JSON.parse(JSON.stringify(updated));
 });
 

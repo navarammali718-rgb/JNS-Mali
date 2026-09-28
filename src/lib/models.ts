@@ -38,9 +38,6 @@ export const Category = (mongoose.models['Category'] || mongoose.model("Category
 // --- Storefront Schema (Singleton) ---
 const storefrontSchema = new mongoose.Schema({
   announcement: { type: String, default: "Free delivery on orders over ₹499" },
-  heroSubtitle: { type: String, default: "Retail prices. Wholesale savings." },
-  heroTitle: { type: String, default: "Everyday essentials that work hard at home." },
-  heroText: { type: String, default: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices." },
   heroImage: { type: String },
   adminEmails: { type: [String], default: ["sanjayparihar0625@gmail.com"] },
   adminFcmTokens: { type: [String], default: [] },

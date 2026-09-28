@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, useCallback, type ReactNode } from "react";
 import { getProductsFn, getStorefrontFn } from "@/server-functions";
 
 type StoreValue = {
@@ -14,6 +14,7 @@ type StoreValue = {
   products: any[];
   isProductsLoading: boolean;
   storefront: any;
+  refreshStorefront: () => Promise<void>;
 };
 
 const StoreContext = createContext<StoreValue | undefined>(undefined);
@@ -22,6 +23,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
   const [storefront, setStorefront] = useState<any>(null);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+
+  const refreshStorefront = useCallback(async () => {
+    try {
+      const storeData = await getStorefrontFn();
+      setStorefront(storeData);
+    } catch (e) {
+      console.error("Failed to refresh storefront:", e);
+    }
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -115,7 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const subtotal = useMemo(() => products.reduce((s, p) => s + p.price * (cart[p.id] ?? 0), 0), [cart, products]);
 
   return (
-    <StoreContext.Provider value={{ cart, wishlist, add, setQty, remove, clearCart, toggleWish, cartCount, subtotal, products, isProductsLoading, storefront }}>
+    <StoreContext.Provider value={{ cart, wishlist, add, setQty, remove, clearCart, toggleWish, cartCount, subtotal, products, isProductsLoading, storefront, refreshStorefront }}>
       {children}
     </StoreContext.Provider>
   );

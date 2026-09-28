@@ -14,9 +14,6 @@ export const Route = createFileRoute("/admin/storefront")({
 function AdminStorefront() {
   const [form, setForm] = useState({
     announcement: "",
-    heroSubtitle: "",
-    heroTitle: "",
-    heroText: "",
     heroImage: "",
     adminEmails: "",
     adminLocationLat: 13.0285,
@@ -38,7 +35,7 @@ function AdminStorefront() {
 
   const [mounted, setMounted] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -130,9 +127,6 @@ function AdminStorefront() {
         if (data) {
           setForm({
             announcement: data.announcement ?? "",
-            heroSubtitle: data.heroSubtitle ?? "",
-            heroTitle: data.heroTitle ?? "",
-            heroText: data.heroText ?? "",
             heroImage: data.heroImage ?? "",
             adminEmails: data.adminEmails ? data.adminEmails.join(", ") : "",
             adminLocationLat: data.adminLocationLat ?? 13.0285,
@@ -200,9 +194,6 @@ function AdminStorefront() {
     setForm(f => ({
       ...f,
       announcement: "Free delivery on orders over ₹499",
-      heroSubtitle: "Retail prices. Wholesale savings.",
-      heroTitle: "Everyday essentials that work hard at home.",
-      heroText: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices.",
       heroImage: "",
       contactEmail: "contact@jnsmali.com",
       contactPhone: "+91 98765 43210",
@@ -250,7 +241,7 @@ function AdminStorefront() {
                 className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-sm font-bold text-slate-700">Contact Email (For Bills/Footer)</label>
@@ -282,7 +273,7 @@ function AdminStorefront() {
               {isChangingLocation ? "Cancel" : "Change Base Location"}
             </Button>
           </div>
-          
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <label className="mb-1.5 block text-sm font-bold text-slate-700">Delivery Radius (km)</label>
@@ -349,7 +340,7 @@ function AdminStorefront() {
                 <Button type="button" variant="secondary" onClick={() => { setShowSuggestions(false); handleSearchMap(); }} disabled={isSearching}>
                   {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
                 </Button>
-                
+
                 {/* Autocomplete Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute top-12 left-0 right-[4.5rem] z-[100] bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -377,7 +368,7 @@ function AdminStorefront() {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-slate-700">Pin your base location</label>
                 <div className="flex gap-2">
@@ -391,20 +382,20 @@ function AdminStorefront() {
                   </Button>
                 </div>
               </div>
-              
+
               <div className={`${isMapFullscreen ? "fixed inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-2rem)]" : "h-[400px]"} w-full rounded-lg border border-slate-200 overflow-hidden relative bg-slate-50 transition-all duration-300`}>
                 {mounted && (
                   <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm font-medium text-slate-500">Loading map...</div>}>
-                    <MapPicker 
-                      position={form.adminLocationLat && form.adminLocationLng ? [form.adminLocationLat, form.adminLocationLng] : null} 
-                      setPosition={(p) => setForm(f => ({ ...f, adminLocationLat: p[0], adminLocationLng: p[1] }))} 
+                    <MapPicker
+                      position={form.adminLocationLat && form.adminLocationLng ? [form.adminLocationLat, form.adminLocationLng] : null}
+                      setPosition={(p) => setForm(f => ({ ...f, adminLocationLat: p[0], adminLocationLng: p[1] }))}
                     />
                   </Suspense>
                 )}
                 {isMapFullscreen && (
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     className="absolute top-4 right-4 z-[400] shadow-md"
                     onClick={() => setIsMapFullscreen(false)}
                   >
@@ -414,11 +405,11 @@ function AdminStorefront() {
               </div>
             </div>
           )}
-          
+
           {!isChangingLocation && (
             <div className="mt-4 text-xs font-medium text-slate-500 bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-1">
               <div className="text-slate-800 text-sm">
-                <span className="font-bold">Current Base Location: </span> 
+                <span className="font-bold">Current Base Location: </span>
                 {form.adminLocationAddress}
               </div>
               <div>
@@ -439,7 +430,7 @@ function AdminStorefront() {
               Reset to Default
             </Button>
           </div>
-          
+
           {/* Announcement bar */}
           <div>
             <h3 className="mb-4 font-bold text-slate-900">Announcement Bar</h3>
@@ -459,7 +450,7 @@ function AdminStorefront() {
 
           <div className="grid gap-8 lg:grid-cols-2 border-t border-slate-100 pt-8">
             {/* Hero image */}
-            <div>
+            <div className="lg:col-span-2">
               <h3 className="mb-4 font-bold text-slate-900">Hero Image</h3>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} />
               <div
@@ -467,7 +458,7 @@ function AdminStorefront() {
                 onClick={() => fileRef.current?.click()}
               >
                 {uploading ? <Loader2 className="size-8 animate-spin text-primary" /> :
-                  form.heroImage ? <img src={form.heroImage} alt="" className="h-32 w-full rounded-lg object-cover shadow-sm" /> :
+                  form.heroImage ? <img src={form.heroImage} alt="" className="h-64 w-full rounded-lg object-cover shadow-sm" /> :
                     <><ImagePlus className="size-8 text-slate-400" /><p className="mt-2 text-sm font-medium text-slate-500">Upload hero image</p></>}
               </div>
               <div className="mt-4 flex gap-2">
@@ -483,50 +474,6 @@ function AdminStorefront() {
                   </Button>
                 )}
               </div>
-            </div>
-
-            {/* Hero content */}
-            <div>
-              <h3 className="mb-4 font-bold text-slate-900">Hero Content</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-slate-700">Subtitle (tagline)</label>
-                  <Input
-                    value={form.heroSubtitle}
-                    onChange={(e) => setForm((f) => ({ ...f, heroSubtitle: e.target.value }))}
-                    placeholder="Retail prices. Wholesale savings."
-                    className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-slate-700">Main headline</label>
-                  <Input
-                    value={form.heroTitle}
-                    onChange={(e) => setForm((f) => ({ ...f, heroTitle: e.target.value }))}
-                    placeholder="Everyday essentials that work hard at home."
-                    className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-slate-700">Body text</label>
-                  <textarea
-                    value={form.heroText}
-                    onChange={(e) => setForm((f) => ({ ...f, heroText: e.target.value }))}
-                    placeholder="From tough kitchen scrubbers to soft bath loofahs..."
-                    rows={3}
-                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 resize-none shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-
-              {/* Preview */}
-              {(form.heroTitle || form.heroSubtitle) && (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                  <p className="text-xs font-bold uppercase text-primary">{form.heroSubtitle}</p>
-                  <h4 className="mt-2 text-xl font-black text-slate-900">{form.heroTitle}</h4>
-                  <p className="mt-2 text-sm font-medium text-slate-600">{form.heroText}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>

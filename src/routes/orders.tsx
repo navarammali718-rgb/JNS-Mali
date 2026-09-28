@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useUser, SignIn } from "@clerk/clerk-react";
+import { useStore } from "@/components/store/store-context";
 import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getUserOrdersFn, getStorefrontFn } from "@/server-functions";
+import { getUserOrdersFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 
 export const Route = createFileRoute("/orders")({
@@ -45,20 +46,16 @@ const statusColor: Record<string, string> = {
 
 function Page() {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { storefront } = useStore();
   const [orders, setOrders] = useState<any[]>([]);
-  const [storefront, setStorefront] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!isSignedIn || !user) { setIsLoading(false); return; }
     async function load() {
       try {
-        const [data, storeData] = await Promise.all([
-          getUserOrdersFn({ data: { userId: user!.id } }),
-          getStorefrontFn()
-        ]);
+        const data = await getUserOrdersFn({ data: { userId: user!.id } });
         setOrders(data);
-        if (storeData) setStorefront(storeData);
       } catch (e) {
         console.error(e);
       } finally {
@@ -100,7 +97,7 @@ function Page() {
 
       {storefront?.contactPhone && (
         <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary">
-          Need help? Customer Care: 
+          Need help? Customer Care:
           <a href={`tel:${storefront.contactPhone}`} className="underline underline-offset-2 hover:text-primary/80">
             {storefront.contactPhone}
           </a>
