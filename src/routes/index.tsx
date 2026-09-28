@@ -4,31 +4,28 @@ import { useEffect, useState } from "react";
 import hero from "@/assets/ghar-safai-hero.jpg";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
-import { getProductsFn, getCategoriesFn, getStorefrontFn } from "@/server-functions";
+import { getCategoriesFn } from "@/server-functions";
+import { useStore } from "@/components/store/store-context";
 
 export const Route=createFileRoute('/')({head:()=>({meta:[{title:'JNS MALI — Cleaning & Household Essentials'},{name:'description',content:'Shop affordable scrubbers, brushes, loofahs, camphor and household essentials with retail and wholesale pricing.'},{property:'og:title',content:'JNS MALI — Cleaning & Household Essentials'},{property:'og:description',content:'Everyday cleaning essentials at honest prices, delivered across India.'},{property:'og:type',content:'website'},{name:'twitter:card',content:'summary_large_image'}]}),component:Home});
 
 function Home(){
-  const [products, setProducts] = useState<any[]>([]);
+  const { products, storefront, isProductsLoading } = useStore();
   const [categories, setCategories] = useState<any[]>([]);
-  const [storefront, setStorefront] = useState<any>({
-    heroSubtitle: "Retail prices. Wholesale savings.",
-    heroTitle: "Everyday essentials that work hard at home.",
-    heroText: "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices."
-  });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Fallback defaults if the user cleared them in DB
+  const heroSubtitle = storefront?.heroSubtitle || "Retail prices. Wholesale savings.";
+  const heroTitle = storefront?.heroTitle || "Everyday essentials that work hard at home.";
+  const heroText = storefront?.heroText || "From tough kitchen scrubbers to soft bath loofahs—stock your home or shop with dependable products at sensible prices.";
+  const heroImage = storefront?.heroImage || hero;
+  const freeDelivery = storefront?.freeDeliveryThreshold ?? 499;
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [prodData, catData, storeData] = await Promise.all([
-          getProductsFn(),
-          getCategoriesFn(),
-          getStorefrontFn()
-        ]);
-        setProducts(prodData);
+        const catData = await getCategoriesFn();
         setCategories(catData);
-        if (storeData) setStorefront(storeData);
       } catch (e) {
         console.error(e);
       } finally {
@@ -42,9 +39,9 @@ function Home(){
     <section className="bg-secondary/40">
       <div className="mx-auto grid max-w-7xl items-center gap-5 px-4 py-4 lg:gap-7 lg:py-12 lg:grid-cols-[.9fr_1.1fr]">
         <div className="hidden lg:block max-w-xl">
-          <p className="mb-3 text-sm font-extrabold uppercase text-primary">{storefront.heroSubtitle}</p>
-          <h1 className="text-4xl font-black leading-[1.05] sm:text-5xl lg:text-6xl">{storefront.heroTitle}</h1>
-          <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">{storefront.heroText}</p>
+          <p className="mb-3 text-sm font-extrabold uppercase text-primary">{heroSubtitle}</p>
+          <h1 className="text-4xl font-black leading-[1.05] sm:text-5xl lg:text-6xl">{heroTitle}</h1>
+          <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">{heroText}</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link to="/shop">Shop all products <ArrowRight/></Link></Button>
 
@@ -57,7 +54,7 @@ function Home(){
 
 
         <div className="relative overflow-hidden rounded-xl bg-accent shadow-sm lg:max-h-none h-[180px] sm:h-[220px] lg:h-auto">
-          <img src={storefront.heroImage || hero} alt="Colourful JNS MALI cleaning and household essentials" width={1600} height={1104} className="h-full w-full object-cover lg:aspect-[4/3]"/>
+          <img src={heroImage} alt="Colourful JNS MALI cleaning and household essentials" width={1600} height={1104} className="h-full w-full object-cover lg:aspect-[4/3]"/>
           <div className="absolute bottom-3 left-3 rounded-md bg-background/95 px-3 py-2 lg:px-4 lg:py-3 shadow-lg">
             <p className="text-[10px] lg:text-xs font-semibold text-muted-foreground">Combo offer</p>
             <p className="text-xs sm:text-sm lg:text-base font-black">Kitchen Starter Pack · ₹249</p>
@@ -87,7 +84,7 @@ function Home(){
     )}
   </div>
 </section>
-<section className="border-y border-border bg-card"><div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-4 md:grid-cols-4 md:divide-y-0">{[{icon:Truck,title:'Free delivery',sub:`Orders over ₹${storefront.freeDeliveryThreshold ?? 499}`},{icon:ShieldCheck,title:'Quality checked',sub:'Useful, durable picks'},{icon:RotateCcw,title:'Easy returns',sub:'Within 7 days'},{icon:BadgeIndianRupee,title:'Better in bulk',sub:'Automatic tier prices'}].map(({icon:I,title,sub})=><div key={title} className="flex items-center gap-3 p-4"><I className="size-6 shrink-0 text-primary"/><div><b className="text-sm">{title}</b><p className="text-xs text-muted-foreground">{sub}</p></div></div>)}</div></section>
+<section className="border-y border-border bg-card"><div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-4 md:grid-cols-4 md:divide-y-0">{[{icon:Truck,title:'Free delivery',sub:`Orders over ₹${freeDelivery}`},{icon:ShieldCheck,title:'Quality checked',sub:'Useful, durable picks'},{icon:RotateCcw,title:'Easy returns',sub:'Within 7 days'},{icon:BadgeIndianRupee,title:'Better in bulk',sub:'Automatic tier prices'}].map(({icon:I,title,sub})=><div key={title} className="flex items-center gap-3 p-4"><I className="size-6 shrink-0 text-primary"/><div><b className="text-sm">{title}</b><p className="text-xs text-muted-foreground">{sub}</p></div></div>)}</div></section>
 <section className="bg-muted/60"><div className="mx-auto max-w-7xl px-4 py-12"><p className="text-sm font-bold text-primary">Customer favourites</p><div className="flex items-end justify-between"><h2 className="text-3xl font-black">Most reordered</h2><Link to="/shop" className="text-sm font-bold text-primary">See everything →</Link></div>
 {isLoading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin size-8 text-primary" /></div> : <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">{products.slice(0,5).map(p=><ProductCard key={p._id || p.id} product={{...p, id: p._id || p.id}}/>)}</div>}
 </div></section>

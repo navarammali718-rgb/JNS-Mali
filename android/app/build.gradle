@@ -4,7 +4,7 @@ android {
     namespace = "com.jnsmali.admin"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.jnsmali.admin"
+        applicationId "com.jnsmali.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
