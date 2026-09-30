@@ -91,6 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "author", content: "JNS MALI" },
       { property: "og:title", content: "JNS MALI — Household Essentials" },
       { property: "og:description", content: "Affordable cleaning and household essentials for homes and shops across India." },
+      { property: "og:site_name", content: "JNS MALI" },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/logo.jpeg" },
       { property: "og:image:alt", content: "JNS MALI Logo" },
@@ -113,10 +114,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "JNS MALI",
+    "url": "https://jnsmali.netlify.app/"
+  };
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       </head>
       <body>
         {children}
