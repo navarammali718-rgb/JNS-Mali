@@ -8,7 +8,7 @@ import {
   Scripts,
   useRouterState,
 } from "@tanstack/react-router";
-import { ClerkProvider } from "@clerk/clerk-react";
+import { ClerkProvider, useUser } from "@clerk/clerk-react";
 import { useEffect, type ReactNode } from "react";
 import { StoreProvider } from "@/components/store/store-context";
 import { SiteShell } from "@/components/store/site-shell";
@@ -170,6 +170,8 @@ function RootComponent() {
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
       <QueryClientProvider client={queryClient}>
+        {/* Syncs every signed-in user to MongoDB — must be inside ClerkProvider */}
+        <UserSyncer />
         {isAdmin ? (
           // Admin routes: no store shell, no header/footer, Clerk available
           <Outlet />
@@ -184,4 +186,23 @@ function RootComponent() {
       </QueryClientProvider>
     </ClerkProvider>
   );
+}
+
+/** Syncs every signed-in user to MongoDB — runs once per sign-in. */
+function UserSyncer() {
+  const { isSignedIn, user } = useUser();
+  useEffect(() => {
+    if (!isSignedIn || !user) return;
+    import("@/server-functions").then(({ upsertUserFn }) => {
+      upsertUserFn({
+        data: {
+          clerkId: user.id,
+          email: user.primaryEmailAddress?.emailAddress ?? "",
+          firstName: user.firstName ?? "",
+          lastName: user.lastName ?? "",
+        },
+      }).catch(() => {});
+    });
+  }, [isSignedIn, user?.id]);
+  return null;
 }

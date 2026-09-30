@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { messaging } from "./lib/fcm";
 import { connectDB } from "./lib/db";
-import { Product } from "./lib/models";
+import { Product, User, Order, Category, Storefront } from "./lib/models";
 import { v2 as cloudinary } from "cloudinary";
 
 export const getCloudinarySignatureFn = createServerFn({ method: "POST" }).handler(async () => {
@@ -86,7 +86,6 @@ export const getProductsByIdsFn = createServerFn({ method: "POST" })
     return JSON.parse(JSON.stringify(products));
 });
 
-import { User, Order, Storefront, Category } from "./lib/models";
 
 export const syncUserFn = createServerFn({ method: "POST" })
   .validator((data: { clerkId: string; email: string; firstName?: string; lastName?: string }) => data)
@@ -196,7 +195,7 @@ export const updateStorefrontFn = createServerFn({ method: "POST" })
     const updated = await Storefront.findOneAndUpdate(
       {},
       { $set: data },
-      { upsert: true, new: true, returnDocument: 'after' }
+      { upsert: true, returnDocument: 'after' }
     ).lean().exec();
     return JSON.parse(JSON.stringify(updated));
 });
@@ -248,64 +247,85 @@ export const deleteCategoryFn = createServerFn({ method: "POST" })
 // --- Push Notification Diagnostic ---
 export const testPushNotificationFn = createServerFn({ method: "POST" }).handler(async () => {
   const results: Record<string, any> = {};
-  
-  // Step 1: Check env vars
   results['envVars'] = {
     FIREBASE_PROJECT_ID: process.env['FIREBASE_PROJECT_ID'] ? '✅ set' : '❌ MISSING',
     FIREBASE_CLIENT_EMAIL: process.env['FIREBASE_CLIENT_EMAIL'] ? '✅ set' : '❌ MISSING',
     FIREBASE_PRIVATE_KEY: process.env['FIREBASE_PRIVATE_KEY'] ? `✅ set (${process.env['FIREBASE_PRIVATE_KEY']!.length} chars)` : '❌ MISSING',
   };
-  
-  // Step 2: Check Firebase init
   try {
     const { getApps } = await import('firebase-admin/app');
     results['firebaseInitialized'] = getApps().length > 0 ? '✅ Yes' : '❌ No apps initialized';
   } catch (e: any) {
     results['firebaseInitialized'] = '❌ Error: ' + e.message;
   }
-  
-  // Step 3: Check stored tokens
   try {
     await connectDB();
     const storefront = await Storefront.findOne({}).lean().exec();
     const tokens = storefront?.adminFcmTokens || [];
-    results['storedTokens'] = {
-      count: tokens.length,
-      tokens: tokens.map((t: string) => t.substring(0, 20) + '...'),
-    };
+    results['storedTokens'] = { count: tokens.length, tokens: tokens.map((t: string) => t.substring(0, 20) + '...') };
   } catch (e: any) {
     results['storedTokens'] = '❌ Error: ' + e.message;
   }
-  
-  // Step 4: Try sending a test notification
   try {
     const storefront = await Storefront.findOne({}).lean().exec();
     const tokens = storefront?.adminFcmTokens || [];
-    
     if (tokens.length === 0) {
       results['testSend'] = '⚠️ No tokens to send to — open the Android app first';
     } else {
-      const testMessage = {
-        notification: {
-          title: '🔔 Test Notification',
-          body: 'Push notifications are working! This is a test from the diagnostic tool.',
-        },
-        tokens: tokens,
-      };
-      const result = await messaging.sendEachForMulticast(testMessage);
-      results['testSend'] = {
-        successCount: result.successCount,
-        failureCount: result.failureCount,
-        details: result.responses.map((r, i) => ({
-          tokenIndex: i,
-          success: r.success,
-          error: r.error ? { code: r.error.code, message: r.error.message } : null,
-        })),
-      };
+      const result = await messaging.sendEachForMulticast({ notification: { title: '🔔 Test Notification', body: 'Push notifications are working!' }, tokens });
+      results['testSend'] = { successCount: result.successCount, failureCount: result.failureCount };
     }
   } catch (e: any) {
     results['testSend'] = '❌ Error: ' + e.message;
   }
-  
   return results;
 });
+
+// --- User Management ---
+export const upsertUserFn = createServerFn({ method: "POST" })
+  .validator((data: { clerkId: string; email: string; firstName?: string; lastName?: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    await User.findOneAndUpdate(
+      { clerkId: data.clerkId },
+      { $set: { email: data.email, firstName: data.firstName, lastName: data.lastName } },
+      { upsert: true, returnDocument: 'after' }
+    ).exec();
+    return { ok: true };
+  });
+
+export const checkUserBlockedFn = createServerFn({ method: "POST" })
+  .validator((data: { clerkId: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const user = await User.findOne({ clerkId: data.clerkId }).lean().exec();
+    if (!user) return { isBlocked: false };
+    return { isBlocked: !!user.isBlocked, reason: user.blockedReason || "" };
+  });
+
+export const getAllUsersFn = createServerFn({ method: "GET" }).handler(async () => {
+  await connectDB();
+  const users = await User.find({}).sort({ createdAt: -1 }).lean().exec();
+  // Attach order counts
+  const orderCounts = await Order.aggregate([
+    { $group: { _id: "$userId", count: { $sum: 1 }, total: { $sum: "$totalAmount" } } }
+  ]);
+  const countMap: Record<string, { count: number; total: number }> = {};
+  for (const o of orderCounts) countMap[o._id] = { count: o.count, total: o.total };
+  return JSON.parse(JSON.stringify(users.map((u: any) => ({
+    ...u,
+    orderCount: countMap[u.clerkId]?.count ?? 0,
+    orderTotal: countMap[u.clerkId]?.total ?? 0,
+  }))));
+});
+
+export const blockUserFn = createServerFn({ method: "POST" })
+  .validator((data: { clerkId: string; isBlocked: boolean; reason?: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    await User.findOneAndUpdate(
+      { clerkId: data.clerkId },
+      { $set: { isBlocked: data.isBlocked, blockedReason: data.reason || "" } }
+    ).exec();
+    return { ok: true };
+  });

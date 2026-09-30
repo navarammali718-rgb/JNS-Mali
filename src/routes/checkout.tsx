@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createOrderFn, syncUserFn } from "@/server-functions";
+import { createOrderFn, syncUserFn, checkUserBlockedFn, upsertUserFn } from "@/server-functions";
 
 const MapPicker = lazy(() => import('@/components/MapPicker'));
 
@@ -50,6 +50,8 @@ function Checkout() {
   const [isSearching, setIsSearching] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
   const storefront = contextStorefront;
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedReason, setBlockedReason] = useState("");
   
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -57,6 +59,17 @@ function Checkout() {
   useEffect(() => { 
     setMounted(true);
   }, []);
+
+  // Upsert user to DB + check if blocked
+  useEffect(() => {
+    if (!isSignedIn || !user) return;
+    const email = user.primaryEmailAddress?.emailAddress ?? "";
+    upsertUserFn({ data: { clerkId: user.id, email, firstName: user.firstName ?? "", lastName: user.lastName ?? "" } }).catch(() => {});
+    checkUserBlockedFn({ data: { clerkId: user.id } }).then(res => {
+      setIsBlocked(res.isBlocked);
+      setBlockedReason(res.reason ?? "");
+    }).catch(() => {});
+  }, [isSignedIn, user]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -134,6 +147,35 @@ function Checkout() {
         </div>
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
           <SignIn routing="virtual" />
+        </div>
+      </main>
+    );
+  }
+
+  // Blocked user screen
+  if (isBlocked) {
+    return (
+      <main className="mx-auto max-w-lg px-4 py-24 text-center">
+        <div className="mx-auto mb-5 grid size-16 place-items-center rounded-full bg-red-100">
+          <Lock className="size-7 text-red-600" />
+        </div>
+        <h1 className="text-2xl font-black text-slate-900">Account Restricted</h1>
+        <p className="mt-3 text-muted-foreground">
+          Your account has been restricted from placing orders.
+          {blockedReason ? ` Reason: ${blockedReason}.` : ""}
+        </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          If you believe this is a mistake, please contact us:
+        </p>
+        {storefront?.contactPhone && (
+          <a href={`tel:${storefront.contactPhone}`} className="mt-3 inline-flex items-center gap-2 rounded-full bg-primary/10 px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition">
+            📞 {storefront.contactPhone}
+          </a>
+        )}
+        <div className="mt-6">
+          <Button asChild variant="outline">
+            <Link to="/">Go back home</Link>
+          </Button>
         </div>
       </main>
     );

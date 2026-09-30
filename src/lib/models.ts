@@ -21,6 +21,8 @@ const userSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
   role: { type: String, default: "customer" },
+  isBlocked: { type: Boolean, default: false },
+  blockedReason: { type: String, default: "" },
 }, { timestamps: true });
 
 export const User = (mongoose.models['User'] || mongoose.model("User", userSchema)) as mongoose.Model<any>;

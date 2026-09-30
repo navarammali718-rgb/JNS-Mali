@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/admin/products" as const, label: "Products", icon: Package },
   { to: "/admin/categories" as const, label: "Categories", icon: Tag },
   { to: "/admin/orders" as const, label: "Orders", icon: ShoppingBag },
+  { to: "/admin/users" as const, label: "Users", icon: Users },
   { to: "/admin/storefront" as const, label: "Settings", icon: Store },
 ];
 

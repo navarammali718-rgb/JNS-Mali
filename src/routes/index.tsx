@@ -37,10 +37,6 @@ function Home(){
       <div className="mx-auto max-w-7xl px-4">
         <div className="relative overflow-hidden rounded-xl bg-accent shadow-sm h-[180px] sm:h-[220px] lg:h-[400px]">
           <img src={heroImage} alt="Colourful JNS MALI cleaning and household essentials" width={1600} height={1104} className="h-full w-full object-cover"/>
-          <div className="absolute bottom-3 left-3 rounded-md bg-background/95 px-3 py-2 lg:px-4 lg:py-3 shadow-lg">
-            <p className="text-[10px] lg:text-xs font-semibold text-muted-foreground">Combo offer</p>
-            <p className="text-xs sm:text-sm lg:text-base font-black">Kitchen Starter Pack · ₹249</p>
-          </div>
         </div>
       </div>
     </section>
