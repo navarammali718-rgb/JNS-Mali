@@ -190,13 +190,32 @@ function Checkout() {
       // Clear cart on success
       clearCart();
 
-      // Navigate to confirmation with order ID
-      await navigate({ to: "/order-confirmation", search: { orderId: order._id } });
+      // Navigate to confirmation with order ID (replace so back doesn't go to empty checkout)
+      await navigate({ to: "/order-confirmation", search: { orderId: order._id }, replace: true });
     } catch (e: any) {
       setError(e?.message ?? "Failed to place order. Please try again.");
     } finally {
       setPlacing(false);
     }
+  }
+
+  // Extracts city + address from a Nominatim address object with wide fallback
+  function extractFromNominatim(data: any) {
+    const a = data.address || {};
+    // City fallback chain — handles metros, towns, villages, suburbs
+    const city =
+      a.city || a.town || a.city_district || a.suburb ||
+      a.county || a.state_district || a.state || "";
+    // Build a readable street-level address instead of the long display_name
+    const parts = [
+      a.house_number,
+      a.road || a.street || a.pedestrian || a.path,
+      a.neighbourhood || a.quarter,
+      a.suburb || a.city_district,
+    ].filter(Boolean);
+    const streetAddress = parts.length > 0 ? parts.join(", ") : (data.display_name || "");
+    const postalCode = a.postcode || "";
+    return { city, streetAddress, postalCode };
   }
 
   const handleAutoDetect = () => {
@@ -205,34 +224,46 @@ function Checkout() {
       return;
     }
     setIsDetecting(true);
+    setError("");
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        // Set coordinates immediately so map pin moves right away
+        setAddress(a => ({ ...a, lat, lng }));
         try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-          if (!res.ok) throw new Error();
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          if (!res.ok) throw new Error("Geocoding failed");
           const data = await res.json();
+          const { city, streetAddress, postalCode } = extractFromNominatim(data);
           setAddress(a => ({
             ...a,
             lat,
             lng,
-            address: data.display_name || a.address,
-            city: data.address?.city || data.address?.town || data.address?.village || a.city,
-            postalCode: data.address?.postcode || a.postalCode,
+            address: streetAddress || a.address,
+            city: city || a.city,
+            postalCode: postalCode || a.postalCode,
           }));
         } catch {
-          setAddress(a => ({ ...a, lat: pos.coords.latitude, lng: pos.coords.longitude }));
-          setError("Location found, but could not auto-detect address details. Please enter manually.");
+          setError("Location found on map! Address fields could not be auto-filled — please enter them manually.");
         } finally {
           setIsDetecting(false);
         }
       },
-      () => {
-        setError("Location permission denied. Please tap on the map or search manually.");
+      (err) => {
         setIsDetecting(false);
+        if (err.code === 1) {
+          setError("Location permission denied. Please allow location access in your device settings, then try again.");
+        } else if (err.code === 3) {
+          setError("Location detection timed out. Please tap the map or search your address manually.");
+        } else {
+          setError("Could not detect location. Please tap the map or search manually.");
+        }
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
@@ -284,18 +315,22 @@ function Checkout() {
   const handleMapClick = async (p: [number, number]) => {
     setAddress(a => ({ ...a, lat: p[0], lng: p[1] }));
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${p[0]}&lon=${p[1]}`);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${p[0]}&lon=${p[1]}&addressdetails=1`,
+        { headers: { "Accept-Language": "en" } }
+      );
       if (res.ok) {
         const data = await res.json();
+        const { city, streetAddress, postalCode } = extractFromNominatim(data);
         setAddress(a => ({
           ...a,
-          address: data.display_name || a.address,
-          city: data.address?.city || data.address?.town || data.address?.village || a.city,
-          postalCode: data.address?.postcode || a.postalCode,
+          address: streetAddress || a.address,
+          city: city || a.city,
+          postalCode: postalCode || a.postalCode,
         }));
       }
-    } catch (e) {
-      // Ignore errors for pin drop
+    } catch {
+      // Ignore errors for pin drop — coordinates are already set
     }
   };
 

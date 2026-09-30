@@ -38,7 +38,7 @@ if (!getApps().length) {
     }
   }
 } else {
-  firebaseApp = getApps()[0];
+  firebaseApp = getApps()[0] ?? null;
 }
 
 let messaging: Messaging;

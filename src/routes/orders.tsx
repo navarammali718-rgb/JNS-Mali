@@ -2,9 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import { useStore } from "@/components/store/store-context";
-import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock } from "lucide-react";
+import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getUserOrdersFn } from "@/server-functions";
+import { getUserOrdersFn, cancelOrderFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 
 export const Route = createFileRoute("/orders")({
@@ -49,6 +49,9 @@ function Page() {
   const { storefront } = useStore();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string>("");
 
   useEffect(() => {
     if (!isSignedIn || !user) { setIsLoading(false); return; }
@@ -64,6 +67,20 @@ function Page() {
     }
     load();
   }, [isSignedIn, user]);
+
+  async function handleCancelOrder(orderId: string) {
+    setCancellingId(orderId);
+    setCancelError("");
+    try {
+      await cancelOrderFn({ data: { orderId, userId: user!.id } });
+      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: "cancelled" } : o));
+    } catch (e: any) {
+      setCancelError(e?.message ?? "Failed to cancel order. Please contact support.");
+    } finally {
+      setCancellingId(null);
+      setConfirmCancelId(null);
+    }
+  }
 
   if (!isLoaded || isLoading) {
     return (
@@ -94,6 +111,12 @@ function Page() {
     <main className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="text-4xl font-black">My Orders</h1>
       <p className="mt-2 text-muted-foreground">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
+
+      {cancelError && (
+        <div className="mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">
+          {cancelError}
+        </div>
+      )}
 
       {storefront?.contactPhone && (
         <div className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary">
@@ -135,6 +158,34 @@ function Page() {
                     <Button asChild variant="outline" size="sm">
                       <Link to="/shop">Buy again</Link>
                     </Button>
+                    {/* Cancel button — only for pending orders */}
+                    {order.status === "pending" && (
+                      confirmCancelId === order._id ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-destructive">Cancel order?</span>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleCancelOrder(order._id)}
+                            disabled={cancellingId === order._id}
+                          >
+                            {cancellingId === order._id ? <Loader2 className="size-3.5 animate-spin" /> : "Yes, cancel"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setConfirmCancelId(null)}>
+                            <X className="size-3.5" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive text-destructive hover:bg-destructive/10"
+                          onClick={() => { setCancelError(""); setConfirmCancelId(order._id); }}
+                        >
+                          Cancel order
+                        </Button>
+                      )
+                    )}
                   </div>
                 </header>
 

@@ -157,6 +157,19 @@ export const getAllOrdersFn = createServerFn({ method: "GET" }).handler(async ()
   return JSON.parse(JSON.stringify(orders));
 });
 
+export const cancelOrderFn = createServerFn({ method: "POST" })
+  .validator((data: { orderId: string; userId: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const order = await Order.findById(data.orderId).exec();
+    if (!order) throw new Error("Order not found.");
+    if (order.userId !== data.userId) throw new Error("Unauthorized.");
+    if (order.status !== "pending") throw new Error("Only pending orders can be cancelled.");
+    order.status = "cancelled";
+    await order.save();
+    return JSON.parse(JSON.stringify(order));
+});
+
 export const updateOrderStatusFn = createServerFn({ method: "POST" })
   .validator((data: { id: string, status: string }) => data)
   .handler(async ({ data }) => {
@@ -237,7 +250,7 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
   const results: Record<string, any> = {};
   
   // Step 1: Check env vars
-  results.envVars = {
+  results['envVars'] = {
     FIREBASE_PROJECT_ID: process.env['FIREBASE_PROJECT_ID'] ? '✅ set' : '❌ MISSING',
     FIREBASE_CLIENT_EMAIL: process.env['FIREBASE_CLIENT_EMAIL'] ? '✅ set' : '❌ MISSING',
     FIREBASE_PRIVATE_KEY: process.env['FIREBASE_PRIVATE_KEY'] ? `✅ set (${process.env['FIREBASE_PRIVATE_KEY']!.length} chars)` : '❌ MISSING',
@@ -246,9 +259,9 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
   // Step 2: Check Firebase init
   try {
     const { getApps } = await import('firebase-admin/app');
-    results.firebaseInitialized = getApps().length > 0 ? '✅ Yes' : '❌ No apps initialized';
+    results['firebaseInitialized'] = getApps().length > 0 ? '✅ Yes' : '❌ No apps initialized';
   } catch (e: any) {
-    results.firebaseInitialized = '❌ Error: ' + e.message;
+    results['firebaseInitialized'] = '❌ Error: ' + e.message;
   }
   
   // Step 3: Check stored tokens
@@ -256,12 +269,12 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
     await connectDB();
     const storefront = await Storefront.findOne({}).lean().exec();
     const tokens = storefront?.adminFcmTokens || [];
-    results.storedTokens = {
+    results['storedTokens'] = {
       count: tokens.length,
       tokens: tokens.map((t: string) => t.substring(0, 20) + '...'),
     };
   } catch (e: any) {
-    results.storedTokens = '❌ Error: ' + e.message;
+    results['storedTokens'] = '❌ Error: ' + e.message;
   }
   
   // Step 4: Try sending a test notification
@@ -270,7 +283,7 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
     const tokens = storefront?.adminFcmTokens || [];
     
     if (tokens.length === 0) {
-      results.testSend = '⚠️ No tokens to send to — open the Android app first';
+      results['testSend'] = '⚠️ No tokens to send to — open the Android app first';
     } else {
       const testMessage = {
         notification: {
@@ -280,7 +293,7 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
         tokens: tokens,
       };
       const result = await messaging.sendEachForMulticast(testMessage);
-      results.testSend = {
+      results['testSend'] = {
         successCount: result.successCount,
         failureCount: result.failureCount,
         details: result.responses.map((r, i) => ({
@@ -291,7 +304,7 @@ export const testPushNotificationFn = createServerFn({ method: "POST" }).handler
       };
     }
   } catch (e: any) {
-    results.testSend = '❌ Error: ' + e.message;
+    results['testSend'] = '❌ Error: ' + e.message;
   }
   
   return results;

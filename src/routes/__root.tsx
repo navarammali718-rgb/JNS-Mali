@@ -92,11 +92,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "JNS MALI — Household Essentials" },
       { property: "og:description", content: "Affordable cleaning and household essentials for homes and shops across India." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/logo.jpeg" },
+      { property: "og:image:alt", content: "JNS MALI Logo" },
+      { property: "og:url", content: "https://jnsmali.netlify.app" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/logo.jpeg" },
+      { name: "theme-color", content: "#16a34a" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/logo.jpeg", type: "image/jpeg" },
+      { rel: "apple-touch-icon", href: "/logo.jpeg" },
+      { rel: "shortcut icon", href: "/logo.jpeg" },
     ],
   }),
   shellComponent: RootShell,
@@ -133,6 +140,32 @@ function RootComponent() {
       router.navigate({ to: "/admin", replace: true });
     }
   }, [location, router]);
+
+  // ── Android physical back-button handler ──────────────────────────────────
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let backButtonListener: any;
+
+    import("@capacitor/app").then(({ App }) => {
+      backButtonListener = App.addListener("backButton", () => {
+        // If we can go back in history, do so
+        if (window.history.length > 1) {
+          router.history.back();
+        } else {
+          // We are at the root — ask user if they want to exit
+          if (window.confirm("Exit JNS MALI?")) {
+            App.exitApp();
+          }
+        }
+      });
+    }).catch(() => {});
+
+    return () => {
+      backButtonListener?.remove();
+    };
+  }, [router]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>

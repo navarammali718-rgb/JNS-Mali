@@ -56,6 +56,9 @@ function Page() {
         <Button asChild variant="outline">
           <Link to="/shop">Continue shopping</Link>
         </Button>
+        <Button asChild variant="ghost">
+          <Link to="/">Go home</Link>
+        </Button>
       </div>
     </main>
   );

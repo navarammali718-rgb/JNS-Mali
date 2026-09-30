@@ -13,11 +13,10 @@ export const Route = createFileRoute('/product/$id')({
 function Product() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { add, toggleWish, wishlist } = useStore();
-  const [qty, setQty] = useState<string>("1");
+  const { add, setQty: setCartQty, remove, cart, toggleWish, wishlist } = useStore();
+  const [qty, setQty] = useState<number>(1);
   const [p, setProduct] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -25,7 +24,11 @@ function Product() {
       try {
         const data = await getProductByIdFn({ data: id });
         if (data) {
-          setProduct({ ...data, id: data._id || data.id });
+          const prod = { ...data, id: data._id || data.id };
+          setProduct(prod);
+          // Initialise qty from existing cart
+          const cartQty = cart[prod.id] ?? 0;
+          setQty(cartQty > 0 ? cartQty : 1);
         } else {
           setProduct(null);
         }
@@ -38,13 +41,28 @@ function Product() {
     load();
   }, [id]);
 
+  const inCart = p ? (cart[p.id] ?? 0) > 0 : false;
+
+  // Increase qty — immediately adds/updates cart
+  const handleIncrease = () => {
+    const newQty = qty + 1;
+    setQty(newQty);
+    if (p) setCartQty(p.id, newQty);
+  };
+
+  // Decrease qty — immediately updates/removes from cart
+  const handleDecrease = () => {
+    const newQty = Math.max(1, qty - 1);
+    setQty(newQty);
+    if (p) setCartQty(p.id, newQty);
+  };
+
+  // Explicit Add to Cart (for first-time add)
   const handleAddToCart = () => {
-    let parsed = parseInt(qty);
-    if (isNaN(parsed) || parsed < 1) parsed = 1;
     if (p) {
-      add(p.id, parsed);
-      setAddedToCart(true);
-      setTimeout(() => setAddedToCart(false), 3000);
+      setCartQty(p.id, qty);
+      // Navigate directly to cart
+      void navigate({ to: "/cart" });
     }
   };
 
@@ -90,40 +108,26 @@ function Product() {
           <p className="mt-5 leading-7 text-muted-foreground">{p.description}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <div className="flex h-11 items-center rounded-md border border-input">
-              <Button variant="ghost" size="icon" onClick={() => {
-                let parsed = parseInt(qty) || 1;
-                setQty(String(Math.max(1, parsed - 1)));
-              }}><Minus /></Button>
-              <input
-                type="number"
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                onBlur={() => {
-                  let parsed = parseInt(qty);
-                  if (isNaN(parsed) || parsed < 1) parsed = 1;
-                  setQty(String(parsed));
-                }}
-                className="w-12 text-center font-bold bg-transparent border-none focus:outline-none appearance-none"
-                min="1"
-              />
-              <Button variant="ghost" size="icon" onClick={() => {
-                let parsed = parseInt(qty) || 1;
-                setQty(String(parsed + 1));
-              }}><Plus /></Button>
+              <Button variant="ghost" size="icon" onClick={handleDecrease}><Minus /></Button>
+              <span className="w-12 text-center font-bold select-none">{qty}</span>
+              <Button variant="ghost" size="icon" onClick={handleIncrease}><Plus /></Button>
             </div>
-            <Button
-              size="lg"
-              className="flex-1"
-              variant={addedToCart ? "secondary" : "default"}
-              onClick={handleAddToCart}
-            >
-              {addedToCart ? (
-                <><Check className="mr-2 size-4" />Added to cart!</>
-              ) : "Add to cart"}
-            </Button>
-            {addedToCart && (
-              <Button asChild variant="outline" size="lg">
-                <Link to="/cart"><ShoppingCart className="mr-2 size-4" />Go to Cart</Link>
+            {inCart ? (
+              <Button
+                size="lg"
+                className="flex-1"
+                variant="secondary"
+                asChild
+              >
+                <Link to="/cart"><ShoppingCart className="mr-2 size-4" />Go to Cart ({cart[p.id]} in cart)</Link>
+              </Button>
+            ) : (
+              <Button
+                size="lg"
+                className="flex-1"
+                onClick={handleAddToCart}
+              >
+                Add to cart
               </Button>
             )}
             <Button variant="outline" size="icon" className="size-11" onClick={() => toggleWish(p.id)}>

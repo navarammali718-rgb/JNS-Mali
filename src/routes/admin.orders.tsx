@@ -4,6 +4,7 @@ import { Loader2, ShoppingBag, ChevronDown, ChevronUp, MapPin, Printer } from "l
 import { getAllOrdersFn, updateOrderStatusFn, getStorefrontFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
+import { Capacitor } from "@capacitor/core";
 
 export const Route = createFileRoute("/admin/orders")({
   component: AdminOrders,
@@ -52,9 +53,6 @@ function AdminOrders() {
   }
 
   function downloadBill(order: any) {
-    const w = window.open("", "_blank");
-    if (!w) return;
-
     const subtotal = order.items.reduce((acc: number, i: any) => acc + i.price * i.quantity, 0);
     const deliveryFee = order.totalAmount - subtotal;
     
@@ -152,7 +150,7 @@ function AdminOrders() {
           </div>
 
           <div class="address">
-            <strong style="font-size:16px; display:block; margin-bottom:8px;">Billed & Shipped To:</strong>
+            <strong style="font-size:16px; display:block; margin-bottom:8px;">Billed &amp; Shipped To:</strong>
             <strong>${order.shippingDetails?.fullName}</strong><br/>
             ${order.shippingDetails?.address}<br/>
             ${order.shippingDetails?.city} - ${order.shippingDetails?.postalCode}<br/>
@@ -166,6 +164,33 @@ function AdminOrders() {
         </body>
       </html>
     `;
+
+    // ── Android / Capacitor: window.open is blocked in WebView ──
+    // Use Web Share API to share the HTML file — user can open in Chrome to print
+    if (Capacitor.isNativePlatform() && navigator.canShare) {
+      const blob = new Blob([html], { type: "text/html" });
+      const file = new File([blob], `JNS_MALI_Invoice_${order._id.slice(-8).toUpperCase()}.html`, { type: "text/html" });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          title: `JNS MALI Invoice #${order._id.slice(-8).toUpperCase()}`,
+          text: "Open this file in Chrome and use Print → Save as PDF",
+          files: [file],
+        }).catch(() => {});
+        return;
+      }
+      // Fallback: download as blob URL
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `JNS_MALI_Invoice_${order._id.slice(-8).toUpperCase()}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // ── Web / Desktop: open in new tab ──
+    const w = window.open("", "_blank");
+    if (!w) return;
     w.document.write(html);
     w.document.close();
   }

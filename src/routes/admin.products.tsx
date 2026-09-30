@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Package, Search } from "lucide-react";
 import {
   getAdminProductsFn,
   getCategoriesFn,
@@ -96,6 +96,8 @@ function AdminProducts() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterAvail, setFilterAvail] = useState<"all" | "available" | "hidden">("all");
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function loadAll() {
@@ -217,32 +219,89 @@ function AdminProducts() {
     }
   }
 
+  // Filtered product list
+  const filteredProducts = products.filter((p) => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || p.name?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q);
+    const matchesAvail =
+      filterAvail === "all" ||
+      (filterAvail === "available" && p.isAvailable !== false) ||
+      (filterAvail === "hidden" && p.isAvailable === false);
+    return matchesSearch && matchesAvail;
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Products</h1>
-          <p className="mt-1 font-medium text-slate-500">{products.length} products in your store</p>
+          <p className="mt-1 font-medium text-slate-500">
+            {filteredProducts.length}{filteredProducts.length !== products.length ? ` of ${products.length}` : ""} products
+          </p>
         </div>
-        <Button onClick={openAdd} className="gap-2">
+        <Button onClick={openAdd} className="gap-2 self-start sm:self-auto">
           <Plus className="size-4" /> Add product
         </Button>
+      </div>
+
+      {/* Search & Filter bar */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name, category or description…"
+            className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="size-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1 shrink-0">
+          {(["all", "available", "hidden"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setFilterAvail(v)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize transition ${
+                filterAvail === v
+                  ? "bg-primary text-white"
+                  : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="size-10 animate-spin text-primary" />
         </div>
-      ) : products.length === 0 ? (
+      ) : filteredProducts.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-20 text-center shadow-sm">
           <Package className="mx-auto mb-4 size-12 text-slate-400" />
-          <p className="font-medium text-slate-500">No products yet. Add your first one!</p>
+          <p className="font-medium text-slate-500">
+            {products.length === 0 ? "No products yet. Add your first one!" : "No products match your search."}
+          </p>
+          {searchQuery && (
+            <button onClick={() => setSearchQuery("")} className="mt-3 text-sm font-bold text-primary hover:underline">
+              Clear search
+            </button>
+          )}
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
           {/* Mobile View */}
           <div className="md:hidden divide-y divide-slate-100">
-            {products.map((p) => (
+            {filteredProducts.map((p) => (
               <div key={p.id} className="p-4 flex flex-col gap-3">
                 <div className="flex gap-3 items-start">
                   {p.imageUrl ? (
@@ -311,7 +370,7 @@ function AdminProducts() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {products.map((p) => (
+                {filteredProducts.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
