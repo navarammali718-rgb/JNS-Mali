@@ -47,7 +47,21 @@ function Cart() {
                   <p className="text-xs text-muted-foreground">{p.unit || 'Piece'}{p.piecesPerUnit > 1 ? ` (${p.piecesPerUnit} pcs)` : ''}</p>
                   <div className="mt-3 flex w-fit items-center rounded-md border border-input">
                     <Button variant="ghost" size="icon" onClick={() => setQty(p.id, (cart[p.id] ?? 0) - 1)}><Minus /></Button>
-                    <b className="w-7 text-center">{cart[p.id] ?? 0}</b>
+                    <input
+                      type="number"
+                      min="1"
+                      value={cart[p.id] || ''}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val)) setQty(p.id, val);
+                      }}
+                      onBlur={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (isNaN(val) || val < 1) setQty(p.id, 1);
+                      }}
+                      className="w-12 text-center font-bold bg-transparent border-none outline-none focus:ring-0"
+                      style={{ appearance: 'textfield', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                    />
                     <Button variant="ghost" size="icon" onClick={() => setQty(p.id, (cart[p.id] ?? 0) + 1)}><Plus /></Button>
                   </div>
                 </div>

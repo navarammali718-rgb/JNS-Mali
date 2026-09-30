@@ -109,7 +109,28 @@ function Product() {
           <div className="mt-6 flex flex-wrap gap-3">
             <div className="flex h-11 items-center rounded-md border border-input">
               <Button variant="ghost" size="icon" onClick={handleDecrease}><Minus /></Button>
-              <span className="w-12 text-center font-bold select-none">{qty}</span>
+              <input
+                type="number"
+                min="1"
+                value={qty || ''}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) {
+                    setQty(val);
+                    if (p && inCart) setCartQty(p.id, val);
+                  } else {
+                    setQty(0 as any); // allow empty visually while typing
+                  }
+                }}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value);
+                  const finalQty = isNaN(val) || val < 1 ? 1 : val;
+                  setQty(finalQty);
+                  if (p && inCart) setCartQty(p.id, finalQty);
+                }}
+                className="w-12 text-center font-bold bg-transparent border-none outline-none focus:ring-0"
+                style={{ appearance: 'textfield', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+              />
               <Button variant="ghost" size="icon" onClick={handleIncrease}><Plus /></Button>
             </div>
             {inCart ? (
