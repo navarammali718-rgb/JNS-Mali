@@ -1,0 +1,5 @@
+# Permanent 301 Redirects from old Netlify subdomains to primary domain jnsmali.in
+https://jnsmali.netlify.app/*    https://jnsmali.in/:splat    301!
+http://jnsmali.netlify.app/*     https://jnsmali.in/:splat    301!
+https://jns-mali.netlify.app/*   https://jnsmali.in/:splat    301!
+http://jns-mali.netlify.app/*    https://jnsmali.in/:splat    301!

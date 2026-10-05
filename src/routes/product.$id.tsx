@@ -79,7 +79,7 @@ function Product() {
     if (!p) return;
     const host = typeof window !== "undefined" && !window.location.origin.includes("localhost")
       ? window.location.origin
-      : "https://jnsmali.netlify.app";
+      : "https://jnsmali.in";
     const shareUrl = `${host}/product/${p.id}`;
     const mrpText = p.mrp && p.mrp > p.price ? ` (MRP: ₹${p.mrp}, ${Math.round((1 - p.price / p.mrp) * 100)}% OFF)` : "";
     const shareText = `Check out *${p.name}* on JNS MALI!\nPrice: ₹${p.price}${mrpText}\nUnit: ${p.unit || 'Piece'}\n\n👉 View product details:\n${shareUrl}`;

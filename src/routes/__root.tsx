@@ -87,20 +87,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" },
       { title: "JNS MALI — Household Essentials" },
       { name: "description", content: "Affordable cleaning and household essentials for homes and shops across India. Best wholesaler for plastic and household products in Yeshwanthpura." },
-      { name: "keywords", content: "jnsmali, jns-mali, jns mali, jnsmali wholesaler, jns-mali wholesaler, jns mali wholesaler, jnsmali plastic, jns-mali plastic, jns mali plastic, jnsmali products, jns-mali products, jns mali products, yeshwanthpura wholesaler, wholesaler jns mali" },
+      { name: "keywords", content: "jnsmali, jnsmali.in, jns-mali, jns mali, jnsmali wholesaler, jns mali wholesaler, jnsmali plastic, jns mali plastic, jnsmali products, jns mali products, yeshwanthpura wholesaler, wholesaler jns mali" },
       { name: "author", content: "JNS MALI" },
+      { name: "google-site-verification", content: "googleb033b3da6102b97f" },
       { property: "og:title", content: "JNS MALI — Household Essentials" },
       { property: "og:description", content: "Affordable cleaning and household essentials for homes and shops across India." },
       { property: "og:site_name", content: "JNS MALI" },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "/logo.jpeg" },
+      { property: "og:image", content: "https://jnsmali.in/logo.jpeg" },
       { property: "og:image:alt", content: "JNS MALI Logo" },
-      { property: "og:url", content: "https://jnsmali.netlify.app" },
+      { property: "og:url", content: "https://jnsmali.in" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "/logo.jpeg" },
+      { name: "twitter:image", content: "https://jnsmali.in/logo.jpeg" },
       { name: "theme-color", content: "#16a34a" },
     ],
     links: [
+      { rel: "canonical", href: "https://jnsmali.in" },
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/logo.jpeg", type: "image/jpeg" },
       { rel: "apple-touch-icon", href: "/logo.jpeg" },
@@ -118,7 +120,12 @@ function RootShell({ children }: { children: ReactNode }) {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "JNS MALI",
-    "url": "https://jnsmali.netlify.app/"
+    "url": "https://jnsmali.in/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://jnsmali.in/shop?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
   };
 
   return (
@@ -143,9 +150,9 @@ function RootComponent() {
 
   useEffect(() => {
     // Check if it's the native app AND specifically the Admin APK
-    const isNativeAdmin = Capacitor.isNativePlatform() && navigator.userAgent.includes("JNS_ADMIN");
+    const isNativeAdmin = Capacitor.isNativePlatform() && (navigator.userAgent.includes("JNS_ADMIN") || window.location.pathname.startsWith("/admin"));
 
-    if (isNativeAdmin && location === "/") {
+    if (isNativeAdmin && !location.startsWith("/admin")) {
       router.navigate({ to: "/admin", replace: true });
     }
   }, [location, router]);

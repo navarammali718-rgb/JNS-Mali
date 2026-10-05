@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jnsmali.netlify.app/sitemap.xml
+Sitemap: https://jnsmali.in/sitemap.xml
