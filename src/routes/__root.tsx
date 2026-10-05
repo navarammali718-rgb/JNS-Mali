@@ -154,17 +154,21 @@ function RootComponent() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let backButtonListener: any;
+    let listenerHandle: any = null;
+    let lastBackPress = 0;
 
     import("@capacitor/app").then(({ App }) => {
-      backButtonListener = App.addListener("backButton", () => {
+      App.addListener("backButton", () => {
         const currentPath = window.location.pathname;
 
         // Admin routes handling: return to dashboard or exit
         if (currentPath.startsWith("/admin")) {
           if (currentPath === "/admin" || currentPath === "/admin/") {
-            if (window.confirm("Exit Admin Panel?")) {
+            const now = Date.now();
+            if (now - lastBackPress < 2000) {
               App.exitApp();
+            } else {
+              lastBackPress = now;
             }
           } else {
             // Coming back to dashboard from any admin subpage
@@ -175,18 +179,29 @@ function RootComponent() {
 
         // Store customer routes handling: return to home page or exit
         if (currentPath === "/" || currentPath === "") {
-          if (window.confirm("Exit JNS MALI?")) {
+          const now = Date.now();
+          if (now - lastBackPress < 2000) {
             App.exitApp();
+          } else {
+            lastBackPress = now;
           }
         } else {
           // Coming back to home page from any store subpage
-          router.navigate({ to: "/" });
+          if (window.history.length > 1) {
+            window.history.back();
+          } else {
+            router.navigate({ to: "/" });
+          }
         }
+      }).then((handle) => {
+        listenerHandle = handle;
       });
     }).catch(() => {});
 
     return () => {
-      backButtonListener?.remove();
+      if (listenerHandle && typeof listenerHandle.remove === "function") {
+        listenerHandle.remove();
+      }
     };
   }, [router]);
   // ─────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { Heart, Plus, ShoppingCart, MessageCircle } from "lucide-react";
+import { Heart, Plus, ShoppingCart } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { formatPrice } from "@/lib/catalog";
 import { useStore } from "./store-context";
@@ -13,19 +13,6 @@ export function ProductCard({ product }: { product: any }) {
   const price = product.price ?? 0;
   const mrp = product.mrp && product.mrp > price ? product.mrp : null;
   const discountPercent = mrp ? Math.round((1 - price / mrp) * 100) : 0;
-
-  const handleWhatsAppShare = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const host = typeof window !== "undefined" && !window.location.origin.includes("localhost")
-      ? window.location.origin
-      : "https://jnsmali.netlify.app";
-    const shareUrl = `${host}/product/${product.id}`;
-    const mrpText = mrp ? ` (MRP: ₹${mrp}, ${discountPercent}% OFF)` : "";
-    const shareText = `Check out *${product.name}* on JNS MALI!\nPrice: ₹${price}${mrpText}\nUnit: ${product.unit || 'Piece'}\n\n👉 View product here:\n${shareUrl}`;
-    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
-    window.open(waUrl, "_blank");
-  };
 
   return (
     <article className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card transition hover:-translate-y-0.5 hover:shadow-lg">
@@ -53,8 +40,8 @@ export function ProductCard({ product }: { product: any }) {
           </span>
         ) : null}
 
-        {/* Action icons */}
-        <div className="absolute right-2 top-2 flex flex-col gap-1.5">
+        {/* Wishlist icon */}
+        <div className="absolute right-2 top-2">
           <Button
             variant="secondary"
             size="icon"
@@ -63,16 +50,6 @@ export function ProductCard({ product }: { product: any }) {
             className="size-7 rounded-full bg-white/90 shadow-sm backdrop-blur hover:bg-white"
           >
             <Heart className={`size-3.5 ${wished ? "fill-primary text-primary" : "text-slate-600"}`} />
-          </Button>
-
-          <Button
-            variant="secondary"
-            size="icon"
-            aria-label="Share on WhatsApp"
-            onClick={handleWhatsAppShare}
-            className="size-7 rounded-full bg-white/90 shadow-sm backdrop-blur hover:bg-emerald-50 text-emerald-600"
-          >
-            <MessageCircle className="size-3.5 fill-emerald-500 text-emerald-500" />
           </Button>
         </div>
       </div>
