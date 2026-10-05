@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Package, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Package, Search, ArrowLeft, Percent } from "lucide-react";
 import {
   getAdminProductsFn,
   getCategoriesFn,
@@ -77,10 +77,12 @@ const EMPTY_FORM = {
   name: "",
   price: "",
   mrp: "",
+  discountPercent: "",
   isAvailable: true,
   category: "",
   description: "",
   imageUrl: "",
+  images: [] as string[],
   unit: "Piece",
   piecesPerUnit: "1",
 };
@@ -95,10 +97,12 @@ function AdminProducts() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [extraUploading, setExtraUploading] = useState(false);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterAvail, setFilterAvail] = useState<"all" | "available" | "hidden">("all");
   const fileRef = useRef<HTMLInputElement>(null);
+  const extraFileRef = useRef<HTMLInputElement>(null);
 
   async function loadAll() {
     try {
@@ -123,19 +127,71 @@ function AdminProducts() {
 
   function openEdit(p: any) {
     setEditId(p.id);
+    const pMrp = p.mrp ? String(p.mrp) : "";
+    const pPrice = p.price ? String(p.price) : "";
+    let pDiscount = "";
+    if (p.mrp && p.price && Number(p.mrp) > Number(p.price)) {
+      pDiscount = String(Math.round((1 - Number(p.price) / Number(p.mrp)) * 100));
+    }
+
     setForm({
       name: p.name ?? "",
-      price: String(p.price ?? ""),
-      mrp: String(p.mrp ?? ""),
+      price: pPrice,
+      mrp: pMrp,
+      discountPercent: pDiscount,
       isAvailable: p.isAvailable !== false,
       category: p.category ?? "",
       description: p.description ?? "",
       imageUrl: p.imageUrl ?? "",
+      images: Array.isArray(p.images) ? p.images : [],
       unit: p.unit ?? "Piece",
       piecesPerUnit: String(p.piecesPerUnit ?? "1"),
     });
     setError("");
     setShowModal(true);
+  }
+
+  // Handle MRP change: if discount is present, update price; otherwise if price present, update discount
+  function handleMrpChange(val: string) {
+    setForm(f => {
+      const mrpNum = parseFloat(val);
+      const discNum = parseFloat(f.discountPercent);
+      const priceNum = parseFloat(f.price);
+
+      let newPrice = f.price;
+      if (!isNaN(mrpNum) && !isNaN(discNum) && discNum > 0 && discNum < 100) {
+        newPrice = String(Math.round(mrpNum * (1 - discNum / 100)));
+      } else if (!isNaN(mrpNum) && !isNaN(priceNum) && mrpNum > priceNum) {
+        // keep price, compute discount
+      }
+      return { ...f, mrp: val, price: newPrice };
+    });
+  }
+
+  // Handle Discount % change: auto update selling price
+  function handleDiscountChange(val: string) {
+    setForm(f => {
+      const mrpNum = parseFloat(f.mrp);
+      const discNum = parseFloat(val);
+      let newPrice = f.price;
+      if (!isNaN(mrpNum) && !isNaN(discNum) && discNum >= 0 && discNum <= 100) {
+        newPrice = String(Math.round(mrpNum * (1 - discNum / 100)));
+      }
+      return { ...f, discountPercent: val, price: newPrice };
+    });
+  }
+
+  // Handle Selling Price change: auto update discount % if MRP is set
+  function handlePriceChange(val: string) {
+    setForm(f => {
+      const mrpNum = parseFloat(f.mrp);
+      const priceNum = parseFloat(val);
+      let newDisc = f.discountPercent;
+      if (!isNaN(mrpNum) && !isNaN(priceNum) && mrpNum > priceNum) {
+        newDisc = String(Math.round((1 - priceNum / mrpNum) * 100));
+      }
+      return { ...f, price: val, discountPercent: newDisc };
+    });
   }
 
   async function handleImageUpload(file: File) {
@@ -164,6 +220,39 @@ function AdminProducts() {
     }
   }
 
+  async function handleExtraImageUpload(file: File) {
+    setExtraUploading(true);
+    try {
+      const { timestamp, signature, cloudName, apiKey } = await getCloudinarySignatureFn();
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("api_key", apiKey);
+      fd.append("timestamp", String(timestamp));
+      fd.append("signature", signature);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        setForm((f) => ({ ...f, images: [...(f.images || []), data.secure_url] }));
+      } else {
+        setError("Extra image upload failed.");
+      }
+    } catch (e) {
+      setError("Extra image upload failed.");
+    } finally {
+      setExtraUploading(false);
+    }
+  }
+
+  function handleRemoveExtraImage(index: number) {
+    setForm(f => ({
+      ...f,
+      images: (f.images || []).filter((_, i) => i !== index)
+    }));
+  }
+
   async function handleSave() {
     if (!form.name.trim() || !form.price || !form.category.trim()) {
       setError("Name, price and category are required.");
@@ -173,14 +262,22 @@ function AdminProducts() {
     setSaving(true);
     setError("");
     try {
+      const parsedPrice = parseFloat(form.price);
+      const parsedMrp = form.mrp ? parseFloat(form.mrp) : undefined;
+      const parsedDiscount = parsedMrp && parsedPrice < parsedMrp
+        ? Math.round((1 - parsedPrice / parsedMrp) * 100)
+        : undefined;
+
       const payload = {
         name: form.name.trim(),
-        price: parseFloat(form.price),
-        mrp: form.mrp ? parseFloat(form.mrp) : undefined,
+        price: parsedPrice,
+        mrp: parsedMrp,
+        discountPercent: parsedDiscount,
         isAvailable: form.isAvailable,
         category: form.category.trim(),
         description: form.description.trim(),
         imageUrl: form.imageUrl.trim(),
+        images: (form.images || []).filter(img => img && img.trim().length > 0),
         unit: form.unit.trim() || "Piece",
         piecesPerUnit: parseInt(form.piecesPerUnit) || 1,
       };
@@ -232,6 +329,12 @@ function AdminProducts() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition"
+      >
+        <ArrowLeft className="size-4" /> Back to Dashboard
+      </Link>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Products</h1>
@@ -320,6 +423,14 @@ function AdminProducts() {
                         / {p.unit ?? "Piece"} {p.piecesPerUnit && p.piecesPerUnit > 1 ? `(${p.piecesPerUnit} pcs)` : ""}
                       </span>
                     </div>
+                    {p.mrp && p.mrp > p.price && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-slate-400 line-through">{formatPrice(p.mrp)}</span>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                          {Math.round((1 - p.price / p.mrp) * 100)}% OFF
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
@@ -397,8 +508,13 @@ function AdminProducts() {
                           / {p.unit ?? "Piece"} {p.piecesPerUnit && p.piecesPerUnit > 1 ? `(${p.piecesPerUnit} pcs)` : ""}
                         </span>
                       </div>
-                      {p.mrp > p.price && (
-                        <span className="text-xs text-slate-500 line-through">{formatPrice(p.mrp)}</span>
+                      {p.mrp && p.mrp > p.price && (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xs text-slate-400 line-through">{formatPrice(p.mrp)}</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1 py-0.5 rounded">
+                            {Math.round((1 - p.price / p.mrp) * 100)}% OFF
+                          </span>
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -456,9 +572,20 @@ function AdminProducts() {
                 <div className="rounded-lg bg-red-500/20 px-4 py-3 text-sm text-red-400">{error}</div>
               )}
 
-              {/* Image upload */}
+              {/* Photo Dimensions Guidance Banner */}
+              <div className="rounded-xl bg-amber-50 border border-amber-200/80 p-3 text-xs text-amber-900 flex items-start gap-2.5 shadow-sm">
+                <span className="text-base leading-none shrink-0">📐</span>
+                <div>
+                  <p className="font-bold text-amber-950">Recommended Product Image Specs</p>
+                  <p className="text-amber-800 mt-0.5 leading-relaxed">
+                    Upload <strong>Square (1:1 ratio, 800×800 px)</strong> images on a clean background. This fits mobile screens properly and prevents photos from shrinking or distorting.
+                  </p>
+                </div>
+              </div>
+
+              {/* Main Image upload */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-slate-700">Product Image</label>
+                <label className="mb-2 block text-sm font-bold text-slate-700">Primary Product Image</label>
                 <input
                   ref={fileRef}
                   type="file"
@@ -476,11 +603,11 @@ function AdminProducts() {
                   {uploading ? (
                     <Loader2 className="size-8 animate-spin text-primary" />
                   ) : form.imageUrl ? (
-                    <img src={form.imageUrl} alt="" className="size-24 rounded-lg object-cover shadow-sm" />
+                    <img src={form.imageUrl} alt="" className="size-24 rounded-lg object-contain shadow-sm bg-white p-1" />
                   ) : (
                     <>
                       <ImagePlus className="size-8 text-slate-400" />
-                      <p className="mt-2 text-sm font-medium text-slate-500">Click to upload image</p>
+                      <p className="mt-2 text-sm font-medium text-slate-500">Click to upload main image</p>
                     </>
                   )}
                 </div>
@@ -507,6 +634,57 @@ function AdminProducts() {
                 )}
               </div>
 
+              {/* Extra Photos Gallery */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800">Additional Gallery Photos</label>
+                    <p className="text-xs text-slate-500">Customers can view more photos / angles on product page</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => extraFileRef.current?.click()}
+                    disabled={extraUploading}
+                    className="gap-1.5 text-xs font-bold bg-white"
+                  >
+                    {extraUploading ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+                    Add Photo
+                  </Button>
+                </div>
+                <input
+                  ref={extraFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleExtraImageUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+                {form.images && form.images.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2.5 mt-3">
+                    {form.images.map((img, idx) => (
+                      <div key={idx} className="group relative aspect-square rounded-lg border border-slate-200 overflow-hidden bg-white shadow-xs">
+                        <img src={img} alt={`Extra ${idx + 1}`} className="w-full h-full object-contain p-1" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExtraImage(idx)}
+                          className="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white shadow-md hover:bg-red-700 transition"
+                          title="Remove photo"
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs italic text-slate-400 mt-1">No additional photos uploaded yet.</p>
+                )}
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="mb-1.5 block text-sm font-bold text-slate-700">Product Name *</label>
@@ -517,16 +695,46 @@ function AdminProducts() {
                     className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-bold text-slate-700">Price (₹) *</label>
-                  <Input
-                    type="number"
-                    value={form.price}
-                    onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                    placeholder="79"
-                    min="0"
-                    className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
-                  />
+
+                {/* Pricing: MRP, Discount, Selling Price */}
+                <div className="sm:col-span-2 grid grid-cols-3 gap-3 bg-slate-50/80 p-3.5 rounded-xl border border-slate-200">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">Original MRP (₹)</label>
+                    <Input
+                      type="number"
+                      value={form.mrp}
+                      onChange={(e) => handleMrpChange(e.target.value)}
+                      placeholder="e.g. 99"
+                      min="0"
+                      className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">Discount (%)</label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={form.discountPercent}
+                        onChange={(e) => handleDiscountChange(e.target.value)}
+                        placeholder="e.g. 20"
+                        min="0"
+                        max="99"
+                        className="bg-white border-slate-200 text-slate-900 pr-7 placeholder:text-slate-400"
+                      />
+                      <Percent className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-900">Selling Price (₹) *</label>
+                    <Input
+                      type="number"
+                      value={form.price}
+                      onChange={(e) => handlePriceChange(e.target.value)}
+                      placeholder="e.g. 79"
+                      min="0"
+                      className="bg-white border-primary/50 font-bold text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
                 </div>
 
                 <div>

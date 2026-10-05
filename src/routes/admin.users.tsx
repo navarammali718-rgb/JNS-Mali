@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Users, ShieldOff, ShieldCheck, Search, X } from "lucide-react";
+import { Loader2, Users, ShieldOff, ShieldCheck, Search, X, ArrowLeft } from "lucide-react";
 import { getAllUsersFn, blockUserFn } from "@/server-functions";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/catalog";
@@ -60,6 +60,12 @@ function AdminUsers() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition"
+      >
+        <ArrowLeft className="size-4" /> Back to Dashboard
+      </Link>
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

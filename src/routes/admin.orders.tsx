@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, ShoppingBag, ChevronDown, ChevronUp, MapPin, Printer } from "lucide-react";
-import { getAllOrdersFn, updateOrderStatusFn, getStorefrontFn } from "@/server-functions";
+import { Loader2, ShoppingBag, ChevronDown, ChevronUp, MapPin, Printer, ArrowLeft, Edit3, Plus, Minus, Trash2, Check } from "lucide-react";
+import { getAllOrdersFn, updateOrderStatusFn, getStorefrontFn, updateOrderItemsFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
 import { Button } from "@/components/ui/button";
 import { Capacitor } from "@capacitor/core";
@@ -27,6 +27,10 @@ function AdminOrders() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
   const [storefront, setStorefront] = useState<any>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const [editedItems, setEditedItems] = useState<any[]>([]);
+  const [savingItems, setSavingItems] = useState(false);
+  const [itemSaveError, setItemSaveError] = useState("");
 
   async function load() {
     try {
@@ -41,6 +45,71 @@ function AdminOrders() {
   }
 
   useEffect(() => { load(); }, []);
+
+  function startEditingItems(order: any) {
+    setEditingOrderId(order._id);
+    setEditedItems(order.items.map((i: any) => ({ ...i })));
+    setItemSaveError("");
+  }
+
+  function cancelEditingItems() {
+    setEditingOrderId(null);
+    setEditedItems([]);
+    setItemSaveError("");
+  }
+
+  function updateItemQuantity(index: number, newQty: number) {
+    if (newQty < 1) return;
+    setEditedItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, quantity: newQty } : item))
+    );
+  }
+
+  function removeItemFromOrder(index: number) {
+    if (editedItems.length <= 1) {
+      setItemSaveError("An order must have at least one item.");
+      return;
+    }
+    setEditedItems((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function saveEditedItems(orderId: string) {
+    setSavingItems(true);
+    setItemSaveError("");
+    try {
+      const res = await updateOrderItemsFn({
+        data: {
+          id: orderId,
+          items: editedItems.map((item) => ({
+            productId: item.productId,
+            name: item.name,
+            price: Number(item.price),
+            quantity: Number(item.quantity),
+            image: item.image,
+          })),
+        },
+      });
+
+      if (res && res.order) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o._id === orderId
+              ? {
+                  ...o,
+                  items: res.order.items,
+                  totalAmount: res.order.totalAmount,
+                }
+              : o
+          )
+        );
+      }
+      setEditingOrderId(null);
+    } catch (err: any) {
+      setItemSaveError(err?.message || "Failed to update order items");
+    } finally {
+      setSavingItems(false);
+    }
+  }
 
   async function handleStatusChange(id: string, status: string) {
     setUpdatingId(id);
@@ -199,6 +268,12 @@ function AdminOrders() {
 
   return (
     <div className="space-y-6">
+      <Link
+        to="/admin"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition"
+      >
+        <ArrowLeft className="size-4" /> Back to Dashboard
+      </Link>
       <div>
         <h1 className="text-3xl font-black text-slate-900">Orders</h1>
         <p className="mt-1 font-medium text-slate-500">{orders.length} total orders</p>
@@ -268,19 +343,116 @@ function AdminOrders() {
                   <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-4 space-y-4">
                     {/* Items */}
                     <div>
-                      <h3 className="mb-2 text-xs font-bold uppercase text-slate-500 tracking-wider">Items</h3>
-                      <div className="space-y-2">
-                        {order.items?.map((item: any, i: number) => (
-                          <div key={i} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-                            {item.image && <img src={item.image} alt="" className="size-10 rounded-md object-cover bg-slate-100 shrink-0" />}
-                            <div className="flex-1 min-w-0">
-                              <p className="truncate text-sm font-bold text-slate-900">{item.name}</p>
-                              <p className="text-xs font-medium text-slate-500">Qty: {item.quantity} × {formatPrice(item.price)}</p>
-                            </div>
-                            <span className="text-sm font-black text-slate-900 pr-2">{formatPrice(item.price * item.quantity)}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-bold uppercase text-slate-500 tracking-wider">
+                          Items ({order.items?.length})
+                        </h3>
+                        {editingOrderId === order._id ? (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditingItems}
+                              disabled={savingItems}
+                              className="h-7 text-xs font-bold text-slate-600 bg-white"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => saveEditedItems(order._id)}
+                              disabled={savingItems}
+                              className="h-7 text-xs font-bold gap-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                            >
+                              {savingItems ? <Loader2 className="size-3 animate-spin" /> : <Check className="size-3" />}
+                              Save Quantities
+                            </Button>
                           </div>
-                        ))}
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditingItems(order)}
+                            className="h-7 text-xs font-bold text-primary hover:bg-primary/10 gap-1.5"
+                          >
+                            <Edit3 className="size-3.5" /> Edit Quantities
+                          </Button>
+                        )}
                       </div>
+
+                      {editingOrderId === order._id && itemSaveError && (
+                        <div className="mb-2 p-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium border border-red-200">
+                          {itemSaveError}
+                        </div>
+                      )}
+
+                      {editingOrderId === order._id ? (
+                        <div className="space-y-2 rounded-xl bg-slate-100/70 p-3 border border-slate-200">
+                          <p className="text-xs font-semibold text-slate-600 mb-2">
+                            Adjust quantities for this order. Subtotal and totals will automatically recalculate.
+                          </p>
+                          {editedItems.map((item: any, i: number) => (
+                            <div key={i} className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-lg border border-slate-200 shadow-xs">
+                              {item.image ? (
+                                <img src={item.image} alt="" className="size-10 rounded-md object-contain bg-slate-50 shrink-0" />
+                              ) : (
+                                <div className="size-10 rounded-md bg-slate-100 shrink-0 grid place-items-center">
+                                  <ShoppingBag className="size-4 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-900">{item.name}</p>
+                                <p className="text-xs font-medium text-slate-500">{formatPrice(item.price)} each</p>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="size-7 rounded-md bg-slate-50"
+                                  onClick={() => updateItemQuantity(i, item.quantity - 1)}
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus className="size-3" />
+                                </Button>
+                                <span className="w-8 text-center text-sm font-bold text-slate-900">{item.quantity}</span>
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="size-7 rounded-md bg-slate-50"
+                                  onClick={() => updateItemQuantity(i, item.quantity + 1)}
+                                >
+                                  <Plus className="size-3" />
+                                </Button>
+                                <span className="text-sm font-black text-slate-900 w-16 text-right">
+                                  {formatPrice(item.price * item.quantity)}
+                                </span>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="size-7 text-red-500 hover:bg-red-50"
+                                  onClick={() => removeItemFromOrder(i)}
+                                  title="Remove item"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {order.items?.map((item: any, i: number) => (
+                            <div key={i} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+                              {item.image && <img src={item.image} alt="" className="size-10 rounded-md object-contain bg-slate-100 shrink-0" />}
+                              <div className="flex-1 min-w-0">
+                                <p className="truncate text-sm font-bold text-slate-900">{item.name}</p>
+                                <p className="text-xs font-medium text-slate-500">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+                              </div>
+                              <span className="text-sm font-black text-slate-900 pr-2">{formatPrice(item.price * item.quantity)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Address */}

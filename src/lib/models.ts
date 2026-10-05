@@ -4,10 +4,13 @@ import mongoose from "mongoose";
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
+  mrp: { type: Number },
+  discountPercent: { type: Number },
   isAvailable: { type: Boolean, default: true },
   category: { type: String, required: true },
   description: { type: String },
   imageUrl: { type: String },
+  images: { type: [String], default: [] },
   unit: { type: String, default: "Piece" },
   piecesPerUnit: { type: Number, default: 1 },
 }, { timestamps: true });
@@ -41,6 +44,15 @@ export const Category = (mongoose.models['Category'] || mongoose.model("Category
 const storefrontSchema = new mongoose.Schema({
   announcement: { type: String, default: "Free delivery on orders over ₹499" },
   heroImage: { type: String },
+  banners: [{
+    imageUrl: { type: String, required: true },
+    title: { type: String, default: "" },
+    subtitle: { type: String, default: "" },
+    priceTag: { type: String, default: "" },
+    mrpTag: { type: String, default: "" },
+    productId: { type: String, default: "" },
+    linkUrl: { type: String, default: "" },
+  }],
   adminEmails: { type: [String], default: ["sanjayparihar0625@gmail.com"] },
   adminFcmTokens: { type: [String], default: [] },
   adminLocationLat: { type: Number, default: 13.0285 }, // Yeshwanthpur, Bangalore

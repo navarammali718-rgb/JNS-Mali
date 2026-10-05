@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { SlidersHorizontal, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { SlidersHorizontal, Loader2, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,12 @@ function Shop() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition mb-4"
+      >
+        <ArrowLeft className="size-4" /> Back to Home
+      </Link>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-bold text-primary">{search.q ? `Results for "${search.q}"` : 'Everyday essentials'}</p>

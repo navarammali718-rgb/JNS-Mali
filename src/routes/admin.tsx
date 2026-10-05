@@ -188,9 +188,14 @@ function AdminLayout() {
             <Menu className="size-5" />
           </Button>
           <span className="font-bold text-slate-900">JNS MALI Admin</span>
-          <span className="ml-auto text-xs text-slate-500">
-            Signed in as <span className="text-slate-900 font-bold">{user?.firstName ?? email}</span>
-          </span>
+          <div className="ml-auto flex items-center gap-3">
+            <Link to="/" className="text-xs font-bold text-primary hover:underline">
+              View Store ↗
+            </Link>
+            <span className="text-xs text-slate-500 hidden sm:inline">
+              Signed in as <span className="text-slate-900 font-bold">{user?.firstName ?? email}</span>
+            </span>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-slate-50">

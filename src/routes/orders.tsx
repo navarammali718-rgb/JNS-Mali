@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import { useStore } from "@/components/store/store-context";
-import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock, X } from "lucide-react";
+import { Check, Clock, PackageCheck, Truck, Loader2, Package, Lock, X, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getUserOrdersFn, cancelOrderFn } from "@/server-functions";
 import { formatPrice } from "@/lib/catalog";
@@ -109,6 +109,12 @@ function Page() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition mb-4"
+      >
+        <ArrowLeft className="size-4" /> Back to Home
+      </Link>
       <h1 className="text-4xl font-black">My Orders</h1>
       <p className="mt-2 text-muted-foreground">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
 

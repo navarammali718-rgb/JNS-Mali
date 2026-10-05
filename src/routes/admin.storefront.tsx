@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
-import { Loader2, Save, ImagePlus, X, Search, MapPin, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Save, ImagePlus, X, Search, MapPin, Maximize2, Minimize2, ArrowLeft, Plus, Trash2, Tag, ExternalLink } from "lucide-react";
 
 const MapPicker = lazy(() => import('@/components/MapPicker'));
-import { getStorefrontFn, updateStorefrontFn, getCloudinarySignatureFn } from "@/server-functions";
+import { getStorefrontFn, updateStorefrontFn, getCloudinarySignatureFn, getAdminProductsFn } from "@/server-functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -11,10 +11,22 @@ export const Route = createFileRoute("/admin/storefront")({
   component: AdminStorefront,
 });
 
+interface StoreBanner {
+  imageUrl: string;
+  title: string;
+  subtitle?: string;
+  priceTag?: string;
+  mrpTag?: string;
+  productId?: string;
+  linkUrl?: string;
+}
+
 function AdminStorefront() {
+  const router = useRouter();
   const [form, setForm] = useState({
     announcement: "",
     heroImage: "",
+    banners: [] as StoreBanner[],
     adminEmails: "",
     adminLocationLat: 13.0285,
     adminLocationLng: 77.5462,
@@ -26,12 +38,16 @@ function AdminStorefront() {
     contactEmail: "contact@jnsmali.com",
     contactPhone: "+91 98765 43210",
   });
+  const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bannerUploadingIdx, setBannerUploadingIdx] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
+  const [targetBannerIdx, setTargetBannerIdx] = useState<number | null>(null);
 
   const [mounted, setMounted] = useState(false);
   const [isChangingLocation, setIsChangingLocation] = useState(false);
@@ -45,6 +61,7 @@ function AdminStorefront() {
 
   useEffect(() => { setMounted(true); }, []);
 
+  // India & Bangalore biased suggestions
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSuggestions([]);
@@ -52,37 +69,90 @@ function AdminStorefront() {
     }
     const delay = setTimeout(async () => {
       try {
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        const storeLat = form.adminLocationLat || 13.0285;
+        const storeLng = form.adminLocationLng || 77.5462;
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=6`);
         if (res.ok) {
           const data = await res.json();
-          setSuggestions(data.features || []);
+          const inFeatures = (data.features || []).filter((f: any) => {
+            const country = (f.properties?.country || "").toLowerCase();
+            const code = (f.properties?.countrycode || "").toUpperCase();
+            return code === "IN" || country.includes("india") || (!country && !code);
+          });
+          if (inFeatures.length > 0) {
+            setSuggestions(inFeatures);
+            return;
+          }
+        }
+
+        // Fallback to Nominatim restricted to India
+        const nomRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=5&addressdetails=1`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          setSuggestions(nomData.map((item: any) => ({
+            geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
+            properties: {
+              name: item.name || item.display_name?.split(",")[0],
+              street: item.address?.road || item.address?.suburb,
+              city: item.address?.city || item.address?.town || "Bengaluru",
+              state: item.address?.state || "Karnataka",
+              country: "India",
+              postcode: item.address?.postcode || "",
+            }
+          })));
         }
       } catch (e) {
       }
-    }, 400);
+    }, 350);
     return () => clearTimeout(delay);
-  }, [searchQuery]);
+  }, [searchQuery, form.adminLocationLat, form.adminLocationLng]);
 
   const handleSearchMap = async () => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     setError("");
     try {
-      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`);
+      const storeLat = form.adminLocationLat || 13.0285;
+      const storeLng = form.adminLocationLng || 77.5462;
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=5`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.features && data.features.length > 0) {
-          const s = data.features[0];
+        const inFeatures = (data.features || []).filter((f: any) => {
+          const country = (f.properties?.country || "").toLowerCase();
+          const code = (f.properties?.countrycode || "").toUpperCase();
+          return code === "IN" || country.includes("india") || (!country && !code);
+        });
+
+        if (inFeatures.length > 0) {
+          const s = inFeatures[0];
           const lat = parseFloat(s.geometry.coordinates[1]);
           const lng = parseFloat(s.geometry.coordinates[0]);
           const p = s.properties;
           const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
           setForm(f => ({ ...f, adminLocationLat: lat, adminLocationLng: lng, adminLocationAddress: label }));
           setSearchQuery(label);
-        } else {
-          setError("Location not found.");
+          return;
         }
       }
+
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=1`,
+        { headers: { "Accept-Language": "en" } }
+      );
+      if (nomRes.ok) {
+        const nomData = await nomRes.json();
+        if (nomData && nomData.length > 0) {
+          const s = nomData[0];
+          setForm(f => ({ ...f, adminLocationLat: parseFloat(s.lat), adminLocationLng: parseFloat(s.lon), adminLocationAddress: s.display_name }));
+          setSearchQuery(s.display_name);
+          return;
+        }
+      }
+
+      setError("Location not found in India. Please tap on map directly.");
     } catch {
       setError("Failed to search location.");
     } finally {
@@ -92,42 +162,42 @@ function AdminStorefront() {
 
   const handleAutoDetect = () => {
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+      alert("Geolocation is not supported by your browser");
       return;
     }
     setIsDetecting(true);
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-          if (!res.ok) throw new Error();
-          const data = await res.json();
-          setForm(f => ({ ...f, adminLocationLat: lat, adminLocationLng: lng, adminLocationAddress: data.display_name || f.adminLocationAddress }));
-          if (data.display_name) setSearchQuery(data.display_name);
-        } catch {
-          setForm(f => ({ ...f, adminLocationLat: pos.coords.latitude, adminLocationLng: pos.coords.longitude }));
-        } finally {
-          setIsDetecting(false);
-        }
-      },
-      () => {
-        setError("Location permission denied.");
+      (pos) => {
+        setForm(f => ({
+          ...f,
+          adminLocationLat: pos.coords.latitude,
+          adminLocationLng: pos.coords.longitude,
+        }));
         setIsDetecting(false);
       },
-      { enableHighAccuracy: true }
+      (err) => {
+        console.error(err);
+        setIsDetecting(false);
+        alert("Failed to get current location. Please check location permissions.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await getStorefrontFn();
+        const [data, prods] = await Promise.all([getStorefrontFn(), getAdminProductsFn()]);
         if (data) {
+          // If banners array exists, use it. If not, seed with heroImage if available
+          let initialBanners: StoreBanner[] = data.banners && data.banners.length > 0
+            ? data.banners
+            : data.heroImage ? [{ imageUrl: data.heroImage, title: "Special Deal", priceTag: "", mrpTag: "", productId: "", linkUrl: "" }] : [];
+
           setForm({
             announcement: data.announcement ?? "",
             heroImage: data.heroImage ?? "",
+            banners: initialBanners,
             adminEmails: data.adminEmails ? data.adminEmails.join(", ") : "",
             adminLocationLat: data.adminLocationLat ?? 13.0285,
             adminLocationLng: data.adminLocationLng ?? 77.5462,
@@ -140,6 +210,7 @@ function AdminStorefront() {
             contactPhone: data.contactPhone ?? "+91 98765 43210",
           });
         }
+        setProducts(prods.map((p: any) => ({ ...p, id: p._id || p.id })));
       } catch (e) {
         console.error(e);
       } finally {
@@ -148,6 +219,88 @@ function AdminStorefront() {
     }
     load();
   }, []);
+
+  async function handleBannerUpload(file: File, index: number) {
+    setBannerUploadingIdx(index);
+    try {
+      const { timestamp, signature, cloudName, apiKey } = await getCloudinarySignatureFn();
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("api_key", apiKey);
+      fd.append("timestamp", String(timestamp));
+      fd.append("signature", signature);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.secure_url) {
+        setForm(f => {
+          const updated = [...f.banners];
+          if (!updated[index]) {
+            updated[index] = { imageUrl: data.secure_url, title: "" };
+          } else {
+            updated[index].imageUrl = data.secure_url;
+          }
+          return {
+            ...f,
+            banners: updated,
+            heroImage: index === 0 ? data.secure_url : f.heroImage || data.secure_url,
+          };
+        });
+      } else {
+        setError("Banner upload failed.");
+      }
+    } catch {
+      setError("Banner upload failed.");
+    } finally {
+      setBannerUploadingIdx(null);
+    }
+  }
+
+  function addBanner() {
+    setForm(f => ({
+      ...f,
+      banners: [
+        ...f.banners,
+        { imageUrl: "", title: "", subtitle: "", priceTag: "", mrpTag: "", productId: "", linkUrl: "" }
+      ]
+    }));
+  }
+
+  function removeBanner(idx: number) {
+    setForm(f => {
+      const updated = f.banners.filter((_, i) => i !== idx);
+      return {
+        ...f,
+        banners: updated,
+        heroImage: updated[0]?.imageUrl || "",
+      };
+    });
+  }
+
+  function updateBannerField(idx: number, field: keyof StoreBanner, val: string) {
+    setForm(f => {
+      const updated = [...f.banners];
+      if (updated[idx]) {
+        updated[idx] = { ...updated[idx], [field]: val };
+
+        if (field === "productId" && val) {
+          const matchedProd = products.find(p => p.id === val);
+          if (matchedProd) {
+            if (!updated[idx].title) updated[idx].title = matchedProd.name;
+            if (!updated[idx].priceTag) updated[idx].priceTag = `₹${matchedProd.price}`;
+            if (!updated[idx].mrpTag && matchedProd.mrp) updated[idx].mrpTag = `₹${matchedProd.mrp}`;
+            if (!updated[idx].imageUrl && (matchedProd.imageUrl || matchedProd.image)) {
+              updated[idx].imageUrl = matchedProd.imageUrl || matchedProd.image;
+            }
+          }
+        }
+      }
+      return {
+        ...f,
+        banners: updated,
+        heroImage: idx === 0 && field === "imageUrl" ? val : f.heroImage,
+      };
+    });
+  }
 
   async function handleImageUpload(file: File) {
     setUploading(true);
@@ -174,8 +327,11 @@ function AdminStorefront() {
     setError("");
     setSaved(false);
     try {
+      const validBanners = form.banners.filter(b => b.imageUrl && b.imageUrl.trim().length > 0);
       const payload = {
         ...form,
+        banners: validBanners,
+        heroImage: validBanners[0]?.imageUrl || form.heroImage,
         adminEmails: form.adminEmails.split(",").map(s => s.trim()).filter(Boolean),
       };
       await updateStorefrontFn({ data: payload });
@@ -195,6 +351,7 @@ function AdminStorefront() {
       ...f,
       announcement: "Free delivery on orders over ₹499",
       heroImage: "",
+      banners: [],
       contactEmail: "contact@jnsmali.com",
       contactPhone: "+91 98765 43210",
     }));
@@ -422,19 +579,191 @@ function AdminStorefront() {
           )}
         </div>
 
-        {/* Storefront Appearance */}
-        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2 space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <h2 className="font-bold text-xl text-slate-900">Storefront Appearance</h2>
-            <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
-              Reset to Default
+        {/* Store Banners & Carousel (Requirement 3 & 5) */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="font-black text-xl text-slate-900">Front Store Banners & Offers</h2>
+              <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Add multiple promotional banners. They scroll horizontally on the website and take customers to the selected product when tapped.
+              </p>
+            </div>
+            <Button onClick={addBanner} size="sm" className="gap-1.5 font-bold shadow-sm">
+              <Plus className="size-4" /> Add New Banner
             </Button>
           </div>
 
-          {/* Announcement bar */}
+          {/* Image Dimensions Guideline banner (Requirement 8) */}
+          <div className="rounded-xl bg-blue-50 border border-blue-200 p-4 text-xs text-blue-900 flex items-start gap-3">
+            <span className="text-xl">📐</span>
+            <div>
+              <p className="font-bold text-sm">Recommended Banner Image Guidelines:</p>
+              <ul className="mt-1 list-disc list-inside space-y-0.5 text-blue-800">
+                <li>Ideal dimensions: <b>1200 x 500 px</b> (or roughly 16:7 / 2:1 aspect ratio).</li>
+                <li>PNG, JPG, or WebP format (max 5MB).</li>
+                <li>Keep important graphics and text towards the center so mobile screens display them cleanly without edge cutoff.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Banners List */}
+          {form.banners.length === 0 ? (
+            <div className="rounded-xl border-2 border-dashed border-slate-300 p-8 text-center bg-slate-50">
+              <ImagePlus className="mx-auto size-10 text-slate-400" />
+              <p className="mt-2 text-sm font-semibold text-slate-600">No custom banners added yet.</p>
+              <p className="text-xs text-slate-400 mt-1">The website will use the default hero banner until you add one.</p>
+              <Button onClick={addBanner} size="sm" variant="outline" className="mt-4 gap-1.5">
+                <Plus className="size-3.5" /> Add First Banner
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {form.banners.map((b, idx) => (
+                <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                    <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
+                      <span className="grid size-6 place-items-center rounded-full bg-primary text-white text-xs font-black">
+                        {idx + 1}
+                      </span>
+                      Banner #{idx + 1} {idx === 0 && <span className="text-xs text-primary font-bold">(Main Banner)</span>}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBanner(idx)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs font-bold gap-1"
+                    >
+                      <Trash2 className="size-3.5" /> Remove
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+                    {/* Image Preview & Upload */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Banner Image *</label>
+                      <div className="relative aspect-[16/8] rounded-lg border border-slate-300 bg-white overflow-hidden flex items-center justify-center">
+                        {b.imageUrl ? (
+                          <img src={b.imageUrl} alt={b.title || "Banner"} className="size-full object-cover" />
+                        ) : (
+                          <div className="p-4 text-center">
+                            <ImagePlus className="mx-auto size-8 text-slate-400" />
+                            <p className="text-xs text-slate-500 font-medium mt-1">No image uploaded</p>
+                          </div>
+                        )}
+                        {bannerUploadingIdx === idx && (
+                          <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                            <Loader2 className="size-6 animate-spin text-primary" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          id={`banner-file-${idx}`}
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleBannerUpload(file, idx);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs font-bold"
+                          onClick={() => document.getElementById(`banner-file-${idx}`)?.click()}
+                          disabled={bannerUploadingIdx === idx}
+                        >
+                          <ImagePlus className="size-3.5 mr-1" />
+                          {b.imageUrl ? "Change Image" : "Upload Image"}
+                        </Button>
+                      </div>
+
+                      <div className="mt-2">
+                        <Input
+                          value={b.imageUrl}
+                          onChange={(e) => updateBannerField(idx, "imageUrl", e.target.value)}
+                          placeholder="Or paste image URL"
+                          className="bg-white text-xs h-8"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Banner Configuration & Links */}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Banner Title / Caption</label>
+                        <Input
+                          value={b.title}
+                          onChange={(e) => updateBannerField(idx, "title", e.target.value)}
+                          placeholder="e.g. Heavy Duty Steel Scrubbers — Super Value Pack"
+                          className="bg-white font-medium"
+                        />
+                      </div>
+
+                      {/* Linked Product Dropdown (Requirement 3) */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                          <ExternalLink className="size-3.5 text-primary" />
+                          Link to Specific Product (Customer clicks banner to open)
+                        </label>
+                        <select
+                          value={b.productId || ""}
+                          onChange={(e) => updateBannerField(idx, "productId", e.target.value)}
+                          className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">-- No specific product (Default Shop link) --</option>
+                          {products.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.name} (₹{p.price} {p.mrp ? `| MRP: ₹${p.mrp}` : ""})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          When clicked on the home screen, customers will be taken directly to this product's page.
+                        </p>
+                      </div>
+
+                      {/* Price Tag Box Settings (Requirement 5) */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                          <Tag className="size-3 text-emerald-600" />
+                          Offer Price Tag (e.g. ₹45 only)
+                        </label>
+                        <Input
+                          value={b.priceTag || ""}
+                          onChange={(e) => updateBannerField(idx, "priceTag", e.target.value)}
+                          placeholder="e.g. ₹45 or Starting ₹39"
+                          className="bg-white font-bold text-emerald-700"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Original MRP Tag (Crossed out)
+                        </label>
+                        <Input
+                          value={b.mrpTag || ""}
+                          onChange={(e) => updateBannerField(idx, "mrpTag", e.target.value)}
+                          placeholder="e.g. ₹60"
+                          className="bg-white text-slate-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Announcement Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2 space-y-4">
+          <h2 className="font-bold text-xl text-slate-900 border-b border-slate-100 pb-3">Announcement Banner</h2>
           <div>
-            <h3 className="mb-4 font-bold text-slate-900">Announcement Bar</h3>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Announcement text</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">Top Bar Announcement Text</label>
             <Input
               value={form.announcement}
               onChange={(e) => setForm((f) => ({ ...f, announcement: e.target.value }))}
@@ -442,39 +771,10 @@ function AdminStorefront() {
               className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
             />
             {form.announcement && (
-              <div className="mt-4 rounded-lg bg-primary px-3 py-2 text-center text-xs font-semibold text-primary-foreground">
+              <div className="mt-3 rounded-lg bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground">
                 {form.announcement}
               </div>
             )}
-          </div>
-
-          <div className="grid gap-8 lg:grid-cols-2 border-t border-slate-100 pt-8">
-            {/* Hero image */}
-            <div className="lg:col-span-2">
-              <h3 className="mb-4 font-bold text-slate-900">Hero Image</h3>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); }} />
-              <div
-                className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 hover:border-primary hover:bg-primary/5 transition"
-                onClick={() => fileRef.current?.click()}
-              >
-                {uploading ? <Loader2 className="size-8 animate-spin text-primary" /> :
-                  form.heroImage ? <img src={form.heroImage} alt="" className="h-64 w-full rounded-lg object-cover shadow-sm" /> :
-                    <><ImagePlus className="size-8 text-slate-400" /><p className="mt-2 text-sm font-medium text-slate-500">Upload hero image</p></>}
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Input
-                  value={form.heroImage}
-                  onChange={(e) => setForm((f) => ({ ...f, heroImage: e.target.value }))}
-                  placeholder="Or paste image URL"
-                  className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 shadow-sm"
-                />
-                {form.heroImage && (
-                  <Button variant="ghost" size="icon" className="shrink-0 text-slate-400 hover:text-slate-900 hover:bg-slate-100" onClick={() => setForm((f) => ({ ...f, heroImage: "" }))}>
-                    <X className="size-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>

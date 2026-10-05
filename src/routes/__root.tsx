@@ -158,14 +158,29 @@ function RootComponent() {
 
     import("@capacitor/app").then(({ App }) => {
       backButtonListener = App.addListener("backButton", () => {
-        // If we can go back in history, do so
-        if (window.history.length > 1) {
-          router.history.back();
-        } else {
-          // We are at the root — ask user if they want to exit
+        const currentPath = window.location.pathname;
+
+        // Admin routes handling: return to dashboard or exit
+        if (currentPath.startsWith("/admin")) {
+          if (currentPath === "/admin" || currentPath === "/admin/") {
+            if (window.confirm("Exit Admin Panel?")) {
+              App.exitApp();
+            }
+          } else {
+            // Coming back to dashboard from any admin subpage
+            router.navigate({ to: "/admin" });
+          }
+          return;
+        }
+
+        // Store customer routes handling: return to home page or exit
+        if (currentPath === "/" || currentPath === "") {
           if (window.confirm("Exit JNS MALI?")) {
             App.exitApp();
           }
+        } else {
+          // Coming back to home page from any store subpage
+          router.navigate({ to: "/" });
         }
       });
     }).catch(() => {});

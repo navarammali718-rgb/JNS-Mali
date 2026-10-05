@@ -177,6 +177,28 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
     return JSON.parse(JSON.stringify(order));
 });
 
+export const updateOrderItemsFn = createServerFn({ method: "POST" })
+  .validator((data: { id: string; items: Array<{ productId: any; name: string; quantity: number; price: number; image?: string }> }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const order = await Order.findById(data.id).exec();
+    if (!order) throw new Error("Order not found");
+
+    // Calculate existing shipping fee
+    const oldSubtotal = order.items.reduce((sum: number, it: any) => sum + (Number(it.price || 0) * Number(it.quantity || 0)), 0);
+    const deliveryFee = Math.max(0, (order.totalAmount || 0) - oldSubtotal);
+
+    // Keep items with quantity > 0
+    const validItems = data.items.filter(it => Number(it.quantity) > 0);
+    const newSubtotal = validItems.reduce((sum, it) => sum + (Number(it.price || 0) * Number(it.quantity || 0)), 0);
+    const newTotalAmount = newSubtotal + deliveryFee;
+
+    order.items = validItems;
+    order.totalAmount = newTotalAmount;
+    await order.save();
+    return JSON.parse(JSON.stringify(order));
+});
+
 export const getStorefrontFn = createServerFn({ method: "GET" }).handler(async () => {
   await connectDB();
   let storefront = await Storefront.findOne({}).lean().exec();

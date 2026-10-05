@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Minus, Plus, ShoppingBag, Trash2, Loader2 } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2, Loader2, ArrowLeft } from "lucide-react";
 import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,12 @@ function Cart() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
+      <Link
+        to="/shop"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition mb-4"
+      >
+        <ArrowLeft className="size-4" /> Continue Shopping
+      </Link>
       <h1 className="text-4xl font-black">Your cart</h1>
       {items.length ? (
         <div className="mt-7 grid gap-7 lg:grid-cols-[1fr_360px]">

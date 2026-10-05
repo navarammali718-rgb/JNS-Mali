@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Check, MapPin, Truck, CreditCard, Loader2, Lock, Search, Maximize2, Minimize2 } from "lucide-react";
+import { createFileRoute, useNavigate, Link, useRouter } from "@tanstack/react-router";
+import { Check, MapPin, Truck, CreditCard, Loader2, Lock, Search, Maximize2, Minimize2, ArrowLeft } from "lucide-react";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import { formatPrice } from "@/lib/catalog";
 import { useStore } from "@/components/store/store-context";
@@ -28,6 +28,7 @@ function Checkout() {
   const { isLoaded, isSignedIn, user } = useUser();
   const { cart, products, subtotal, clearCart, storefront: contextStorefront } = useStore();
   const navigate = useNavigate();
+  const router = useRouter();
 
   const [step, setStep] = useState(1);
   const [pay, setPay] = useState("cod");
@@ -78,17 +79,50 @@ function Checkout() {
     }
     const delay = setTimeout(async () => {
       try {
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=5`);
+        const storeLat = storefront?.adminLocationLat || 13.0285;
+        const storeLng = storefront?.adminLocationLng || 77.5462;
+        // Bias search towards store location (Bangalore / Karnataka)
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=8`);
         if (res.ok) {
           const data = await res.json();
-          setSuggestions(data.features || []);
+          // Filter to Indian locations and prioritize Karnataka / Bangalore
+          const inFeatures = (data.features || []).filter((f: any) => {
+            const country = (f.properties?.country || "").toLowerCase();
+            const code = (f.properties?.countrycode || "").toUpperCase();
+            return code === "IN" || country.includes("india") || (!country && !code);
+          });
+          if (inFeatures.length > 0) {
+            setSuggestions(inFeatures);
+            return;
+          }
+        }
+
+        // Fallback directly to Nominatim restricted to India
+        const nomRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=6&addressdetails=1`,
+          { headers: { "Accept-Language": "en" } }
+        );
+        if (nomRes.ok) {
+          const nomData = await nomRes.json();
+          const mapped = nomData.map((item: any) => ({
+            geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
+            properties: {
+              name: item.name || item.display_name?.split(",")[0],
+              street: item.address?.road || item.address?.suburb,
+              city: item.address?.city || item.address?.town || item.address?.city_district || "Bengaluru",
+              state: item.address?.state || "Karnataka",
+              country: "India",
+              postcode: item.address?.postcode || "",
+            }
+          }));
+          setSuggestions(mapped);
         }
       } catch (e) {
         // ignore
       }
-    }, 400);
+    }, 350);
     return () => clearTimeout(delay);
-  }, [searchQuery]);
+  }, [searchQuery, storefront]);
 
   function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
     const R = 6371; // Radius of the earth in km
@@ -314,20 +348,46 @@ function Checkout() {
     setIsSearching(true);
     setError("");
     try {
-      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&limit=1`);
+      const storeLat = storefront?.adminLocationLat || 13.0285;
+      const storeLng = storefront?.adminLocationLng || 77.5462;
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=5`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.features && data.features.length > 0) {
-          const s = data.features[0];
+        const inFeatures = (data.features || []).filter((f: any) => {
+          const country = (f.properties?.country || "").toLowerCase();
+          const code = (f.properties?.countrycode || "").toUpperCase();
+          return code === "IN" || country.includes("india") || (!country && !code);
+        });
+
+        if (inFeatures.length > 0) {
+          const s = inFeatures[0];
           const lat = parseFloat(s.geometry.coordinates[1]);
           const lng = parseFloat(s.geometry.coordinates[0]);
           const p = s.properties;
           const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
           setAddress(a => ({ ...a, lat, lng, address: label, city: p.city || a.city, postalCode: p.postcode || a.postalCode }));
-        } else {
-          setError("Location not found. Please try a different search or drop the pin manually.");
+          return;
         }
       }
+
+      // Fallback directly to Nominatim restricted to India
+      const nomRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=1&addressdetails=1`,
+        { headers: { "Accept-Language": "en" } }
+      );
+      if (nomRes.ok) {
+        const nomData = await nomRes.json();
+        if (nomData && nomData.length > 0) {
+          const item = nomData[0];
+          const lat = parseFloat(item.lat);
+          const lng = parseFloat(item.lon);
+          const { city, streetAddress, postalCode } = extractFromNominatim(item);
+          setAddress(a => ({ ...a, lat, lng, address: streetAddress || item.display_name, city: city || a.city, postalCode: postalCode || a.postalCode }));
+          return;
+        }
+      }
+
+      setError("Location not found in India. Please try another area or tap the map directly.");
     } catch {
       setError("Failed to search location.");
     } finally {
@@ -383,8 +443,25 @@ function Checkout() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="text-4xl font-black">Checkout</h1>
+    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+      {/* Back to Cart Button */}
+      <div className="mb-4">
+        <button
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              router.history.back();
+            } else {
+              navigate({ to: "/cart" });
+            }
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-bold text-foreground shadow-sm transition hover:bg-muted hover:text-primary"
+        >
+          <ArrowLeft className="size-4" />
+          <span>Back to Cart</span>
+        </button>
+      </div>
+
+      <h1 className="text-3xl sm:text-4xl font-black">Checkout</h1>
 
       {/* Step indicator */}
       <div className="mt-6 grid grid-cols-3 gap-2">
@@ -430,12 +507,12 @@ function Checkout() {
                 />
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold mb-1">
-                    Search Location on Map
+                    Search Location on Map (Bengaluru & Karnataka)
                   </label>
                   <div className="flex gap-2 relative">
                     <Input
                       className="h-11 flex-1"
-                      placeholder="e.g. Connaught Place, New Delhi"
+                      placeholder="e.g. Yeshwanthpur, Malleshwaram, Bengaluru"
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
