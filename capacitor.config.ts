@@ -2,10 +2,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.jnsmali.admin',
-  appName: 'JNS MALI',
+  appName: 'JNS MALI Admin',
   webDir: 'dist',
   server: {
-    url: 'https://jnsmali.in',
+    url: 'https://jnsmali.in/admin',
     cleartext: true,
     allowNavigation: [
       'jnsmali.in',
@@ -18,7 +18,7 @@ const config: CapacitorConfig = {
       'photon.komoot.io',
     ],
   },
-  appendUserAgent: 'JNS_MALI_APP',
+  appendUserAgent: 'JNS_ADMIN',
   plugins: {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

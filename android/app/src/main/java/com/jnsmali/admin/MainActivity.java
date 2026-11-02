@@ -90,7 +90,7 @@ public class MainActivity extends BridgeActivity {
 
                             // If on admin dashboard root (/admin or /admin/), confirm exit with double-tap
                             if (path.equals("/admin") || path.equals("/admin/")) {
-                                handleExitWithDoubleTap("Press back again to exit");
+                                handleExitWithDoubleTap("Press back again to exit Admin");
                                 return;
                             }
 

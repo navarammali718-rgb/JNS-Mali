@@ -169,6 +169,16 @@ function RootComponent() {
   const isAdmin = location.startsWith("/admin");
 
   useEffect(() => {
+    // If running in the Admin APK (User-Agent: JNS_ADMIN), ensure it stays strictly on /admin
+    const isNativeAdmin =
+      Capacitor.isNativePlatform() &&
+      navigator.userAgent.includes("JNS_ADMIN");
+
+    if (isNativeAdmin && !location.startsWith("/admin")) {
+      router.navigate({ to: "/admin", replace: true });
+      return;
+    }
+
     // Only redirect regular web browsers from netlify.app to jnsmali.in, never touch the native APK!
     if (!Capacitor.isNativePlatform() && window.location.hostname.includes("netlify.app")) {
       window.location.replace(
