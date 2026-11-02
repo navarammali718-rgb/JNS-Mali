@@ -22,9 +22,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    flavorDimensions "type"
+    productFlavors {
+        customer {
+            dimension "type"
+            applicationId "com.jnsmali.app"
+            versionCode 4
+            versionName "1.2"
+        }
+        admin {
+            dimension "type"
+            applicationId "com.jnsmali.admin"
+            versionCode 4
+            versionName "1.2"
+        }
+    }
+
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "jns-admin-${variant.name}.apk"
+            outputFileName = "${variant.flavorName == 'admin' ? 'JNS-MALI-Admin' : 'JNS-MALI-Customer'}-${variant.buildType.name}.apk"
         }
     }
 }

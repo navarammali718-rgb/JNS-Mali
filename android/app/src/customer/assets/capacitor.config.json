@@ -1,0 +1,30 @@
+{
+	"appId": "com.jnsmali.app",
+	"appName": "JNS MALI",
+	"webDir": "dist",
+	"server": {
+		"url": "https://jnsmali.in",
+		"cleartext": true,
+		"allowNavigation": [
+			"jnsmali.in",
+			"*.jnsmali.in",
+			"jnsmali.netlify.app",
+			"*.netlify.app",
+			"*.clerk.accounts.dev",
+			"*.clerk.com",
+			"nominatim.openstreetmap.org",
+			"photon.komoot.io"
+		]
+	},
+	"appendUserAgent": "JNS_MALI_APP",
+	"plugins": {
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	}
+}
+
