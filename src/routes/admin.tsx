@@ -75,7 +75,13 @@ function AdminLayout() {
             <p className="mt-2 text-slate-500">Sign in to access the dashboard</p>
           </div>
           <div className="overflow-hidden rounded-2xl bg-white p-6 shadow-2xl">
-            <SignIn routing="virtual" />
+            <SignIn
+              routing="virtual"
+              fallbackRedirectUrl="/admin"
+              forceRedirectUrl="/admin"
+              signUpFallbackRedirectUrl="/admin"
+              signUpForceRedirectUrl="/admin"
+            />
           </div>
         </div>
       </div>

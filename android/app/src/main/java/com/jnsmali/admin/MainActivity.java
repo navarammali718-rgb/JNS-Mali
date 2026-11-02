@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.webkit.CookieManager;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -56,14 +57,33 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
-        // Enable Geolocation and DOM storage in WebView
+        // Enable Geolocation, DOM storage, and persistent Cookies in WebView
         try {
             WebView webView = getBridge() != null ? getBridge().getWebView() : null;
             if (webView != null) {
                 WebSettings settings = webView.getSettings();
+                settings.setJavaScriptEnabled(true);
                 settings.setGeolocationEnabled(true);
                 settings.setDatabaseEnabled(true);
                 settings.setDomStorageEnabled(true);
+                settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+                // Enable third-party and persistent cookies across app restarts (critical for Clerk authentication)
+                CookieManager cookieManager = CookieManager.getInstance();
+                cookieManager.setAcceptCookie(true);
+                cookieManager.setAcceptThirdPartyCookies(webView, true);
+
+                // For the Admin package (com.jnsmali.admin), guarantee JNS_ADMIN is in User-Agent
+                String ua = settings.getUserAgentString();
+                if (getPackageName().contains("admin")) {
+                    if (ua != null && !ua.contains("JNS_ADMIN")) {
+                        settings.setUserAgentString(ua + " JNS_ADMIN");
+                    }
+                } else {
+                    if (ua != null && !ua.contains("JNS_MALI_APP")) {
+                        settings.setUserAgentString(ua + " JNS_MALI_APP");
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,5 +153,29 @@ public class MainActivity extends BridgeActivity {
             lastBackPressTime = currentTime;
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        try {
+            CookieManager.getInstance().flush();
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        try {
+            CookieManager.getInstance().flush();
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    public void onDestroy() {
+        try {
+            CookieManager.getInstance().flush();
+        } catch (Exception ignored) {}
+        super.onDestroy();
     }
 }
