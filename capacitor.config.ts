@@ -2,19 +2,28 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.jnsmali.admin',
-  appName: 'JNS Admin',
+  appName: 'JNS MALI',
   webDir: 'dist',
   server: {
-    url: 'https://jnsmali.in/admin',
+    url: 'https://jnsmali.in',
     cleartext: true,
-    allowNavigation: ['jnsmali.in', 'jnsmali.netlify.app']
+    allowNavigation: [
+      'jnsmali.in',
+      '*.jnsmali.in',
+      'jnsmali.netlify.app',
+      '*.netlify.app',
+      '*.clerk.accounts.dev',
+      '*.clerk.com',
+      'nominatim.openstreetmap.org',
+      'photon.komoot.io',
+    ],
   },
-  appendUserAgent: "JNS_ADMIN",
+  appendUserAgent: 'JNS_MALI_APP',
   plugins: {
     PushNotifications: {
-      presentationOptions: ["badge", "sound", "alert"]
-    }
-  }
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
+  },
 };
 
 export default config;

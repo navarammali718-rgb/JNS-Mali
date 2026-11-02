@@ -237,12 +237,38 @@ function AdminStorefront() {
     }
   };
 
-  const handleAutoDetect = () => {
+  const handleAutoDetect = async () => {
+    setIsDetecting(true);
+
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const perm = await Geolocation.requestPermissions();
+        if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+          alert("Location permission was not granted. Please allow location access in your phone settings.");
+          setIsDetecting(false);
+          return;
+        }
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+        setForm((f) => ({
+          ...f,
+          adminLocationLat: pos.coords.latitude,
+          adminLocationLng: pos.coords.longitude,
+        }));
+        setIsDetecting(false);
+        return;
+      }
+    } catch (e) {
+      console.error("Native geolocation error, falling back to browser:", e);
+    }
+
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
+      setIsDetecting(false);
       return;
     }
-    setIsDetecting(true);
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setForm((f) => ({

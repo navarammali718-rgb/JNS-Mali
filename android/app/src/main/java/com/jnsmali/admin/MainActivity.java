@@ -1,7 +1,12 @@
 package com.jnsmali.admin;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.webkit.GeolocationPermissions;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
@@ -13,6 +18,35 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Create high-importance Notification Channel for Order Alerts (Android 8.0+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                "orders_channel",
+                "Order Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Notifications for orders and delivery updates");
+            channel.enableLights(true);
+            channel.enableVibration(true);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        // Enable Geolocation and DOM storage in WebView
+        try {
+            WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+            if (webView != null) {
+                WebSettings settings = webView.getSettings();
+                settings.setGeolocationEnabled(true);
+                settings.setDatabaseEnabled(true);
+                settings.setDomStorageEnabled(true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Native Android physical back button & gesture interceptor
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -35,7 +69,7 @@ public class MainActivity extends BridgeActivity {
 
                             // If on admin dashboard root (/admin or /admin/), confirm exit with double-tap
                             if (path.equals("/admin") || path.equals("/admin/")) {
-                                handleExitWithDoubleTap("Press back again to exit Admin");
+                                handleExitWithDoubleTap("Press back again to exit");
                                 return;
                             }
 

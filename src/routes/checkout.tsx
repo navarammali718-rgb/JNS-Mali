@@ -7,6 +7,7 @@ import { useStore } from "@/components/store/store-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createOrderFn, syncUserFn, checkUserBlockedFn, upsertUserFn } from "@/server-functions";
+import { Capacitor } from "@capacitor/core";
 
 const MapPicker = lazy(() => import('@/components/MapPicker'));
 
@@ -294,13 +295,57 @@ function Checkout() {
     return { city, streetAddress, postalCode };
   }
 
-  const handleAutoDetect = () => {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
-      return;
-    }
+  const handleAutoDetect = async () => {
     setIsDetecting(true);
     setError("");
+
+    // Use Capacitor Geolocation for native Android permission prompts if running in APK
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const perm = await Geolocation.requestPermissions();
+        if (perm.location !== "granted" && perm.coarseLocation !== "granted") {
+          setError("Location permission was not granted. Please allow location access in your phone settings.");
+          setIsDetecting(false);
+          return;
+        }
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setAddress(a => ({ ...a, lat, lng }));
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const { city, streetAddress, postalCode } = extractFromNominatim(data);
+            setAddress(a => ({
+              ...a,
+              lat,
+              lng,
+              address: streetAddress || a.address,
+              city: city || a.city,
+              postalCode: postalCode || a.postalCode,
+            }));
+          }
+        } catch {
+          setError("Location detected on map! Please verify your street address.");
+        } finally {
+          setIsDetecting(false);
+        }
+        return;
+      } catch (nativeErr) {
+        console.warn("Native geolocation fallback to browser navigator:", nativeErr);
+      }
+    }
+
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      setIsDetecting(false);
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
