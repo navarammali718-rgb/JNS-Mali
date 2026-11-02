@@ -17,8 +17,10 @@ import { Capacitor } from "@capacitor/core";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
-// @ts-ignore - TS expects bracket notation but Vite expects dot notation for replacement
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+const CLERK_PUBLISHABLE_KEY =
+  (typeof process !== "undefined" ? process.env?.["VITE_CLERK_PUBLISHABLE_KEY"] : undefined) ||
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
+  "pk_test_ZXhjaXRlZC1kaW5vc2F1ci04NTYyLmNsZXJrLmFjY291bnRzLmRldiQ";
 
 function NotFoundComponent() {
   return (
@@ -84,14 +86,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover",
+      },
       { title: "JNS MALI — Household Essentials" },
-      { name: "description", content: "Affordable cleaning and household essentials for homes and shops across India. Best wholesaler for plastic and household products in Yeshwanthpura." },
-      { name: "keywords", content: "jnsmali, jnsmali.in, jns-mali, jns mali, jnsmali wholesaler, jns mali wholesaler, jnsmali plastic, jns mali plastic, jnsmali products, jns mali products, yeshwanthpura wholesaler, wholesaler jns mali" },
+      {
+        name: "description",
+        content:
+          "Affordable cleaning and household essentials for homes and shops across India. Best wholesaler for plastic and household products in Yeshwanthpura.",
+      },
+      {
+        name: "keywords",
+        content:
+          "jnsmali, jnsmali.in, jns-mali, jns mali, jnsmali wholesaler, jns mali wholesaler, jnsmali plastic, jns mali plastic, jnsmali products, jns mali products, yeshwanthpura wholesaler, wholesaler jns mali",
+      },
       { name: "author", content: "JNS MALI" },
       { name: "google-site-verification", content: "googleb033b3da6102b97f" },
       { property: "og:title", content: "JNS MALI — Household Essentials" },
-      { property: "og:description", content: "Affordable cleaning and household essentials for homes and shops across India." },
+      {
+        property: "og:description",
+        content: "Affordable cleaning and household essentials for homes and shops across India.",
+      },
       { property: "og:site_name", content: "JNS MALI" },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "https://jnsmali.in/logo.jpeg" },
@@ -119,20 +136,23 @@ function RootShell({ children }: { children: ReactNode }) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "JNS MALI",
-    "url": "https://jnsmali.in/",
-    "potentialAction": {
+    name: "JNS MALI",
+    url: "https://jnsmali.in/",
+    potentialAction: {
       "@type": "SearchAction",
-      "target": "https://jnsmali.in/shop?q={search_term_string}",
-      "query-input": "required name=search_term_string"
-    }
+      target: "https://jnsmali.in/shop?q={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
   };
 
   return (
     <html lang="en">
       <head>
         <HeadContent />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
       </head>
       <body>
         {children}
@@ -151,12 +171,16 @@ function RootComponent() {
   useEffect(() => {
     // Only redirect regular web browsers from netlify.app to jnsmali.in, never touch the native APK!
     if (!Capacitor.isNativePlatform() && window.location.hostname.includes("netlify.app")) {
-      window.location.replace(`https://jnsmali.in${window.location.pathname}${window.location.search}`);
+      window.location.replace(
+        `https://jnsmali.in${window.location.pathname}${window.location.search}`,
+      );
       return;
     }
 
     // Check if it's the native app AND specifically the Admin APK
-    const isNativeAdmin = Capacitor.isNativePlatform() && (navigator.userAgent.includes("JNS_ADMIN") || window.location.pathname.startsWith("/admin"));
+    const isNativeAdmin =
+      Capacitor.isNativePlatform() &&
+      (navigator.userAgent.includes("JNS_ADMIN") || window.location.pathname.startsWith("/admin"));
 
     if (isNativeAdmin && !location.startsWith("/admin")) {
       router.navigate({ to: "/admin", replace: true });
@@ -167,16 +191,32 @@ function RootComponent() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let listenerHandle: any = null;
+    let listenerHandle: { remove: () => void | Promise<void> } | null = null;
     let lastBackPress = 0;
 
-    import("@capacitor/app").then(({ App }) => {
-      App.addListener("backButton", () => {
-        const currentPath = window.location.pathname;
+    import("@capacitor/app")
+      .then(({ App }) => {
+        App.addListener("backButton", () => {
+          const currentPath = window.location.pathname;
 
-        // Admin routes handling: return to dashboard or exit
-        if (currentPath.startsWith("/admin")) {
-          if (currentPath === "/admin" || currentPath === "/admin/") {
+          // Admin routes handling: return to dashboard or exit
+          if (currentPath.startsWith("/admin")) {
+            if (currentPath === "/admin" || currentPath === "/admin/") {
+              const now = Date.now();
+              if (now - lastBackPress < 2000) {
+                App.exitApp();
+              } else {
+                lastBackPress = now;
+              }
+            } else {
+              // Coming back to dashboard from any admin subpage
+              router.navigate({ to: "/admin" });
+            }
+            return;
+          }
+
+          // Store customer routes handling: return to home page or exit
+          if (currentPath === "/" || currentPath === "") {
             const now = Date.now();
             if (now - lastBackPress < 2000) {
               App.exitApp();
@@ -184,32 +224,18 @@ function RootComponent() {
               lastBackPress = now;
             }
           } else {
-            // Coming back to dashboard from any admin subpage
-            router.navigate({ to: "/admin" });
+            // Coming back to home page from any store subpage
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              router.navigate({ to: "/" });
+            }
           }
-          return;
-        }
-
-        // Store customer routes handling: return to home page or exit
-        if (currentPath === "/" || currentPath === "") {
-          const now = Date.now();
-          if (now - lastBackPress < 2000) {
-            App.exitApp();
-          } else {
-            lastBackPress = now;
-          }
-        } else {
-          // Coming back to home page from any store subpage
-          if (window.history.length > 1) {
-            window.history.back();
-          } else {
-            router.navigate({ to: "/" });
-          }
-        }
-      }).then((handle) => {
-        listenerHandle = handle;
-      });
-    }).catch(() => {});
+        }).then((handle) => {
+          listenerHandle = handle;
+        });
+      })
+      .catch(() => {});
 
     return () => {
       if (listenerHandle && typeof listenerHandle.remove === "function") {
@@ -243,18 +269,23 @@ function RootComponent() {
 /** Syncs every signed-in user to MongoDB — runs once per sign-in. */
 function UserSyncer() {
   const { isSignedIn, user } = useUser();
+  const userId = user?.id;
+  const email = user?.primaryEmailAddress?.emailAddress ?? "";
+  const firstName = user?.firstName ?? "";
+  const lastName = user?.lastName ?? "";
+
   useEffect(() => {
-    if (!isSignedIn || !user) return;
+    if (!isSignedIn || !userId) return;
     import("@/server-functions").then(({ upsertUserFn }) => {
       upsertUserFn({
         data: {
-          clerkId: user.id,
-          email: user.primaryEmailAddress?.emailAddress ?? "",
-          firstName: user.firstName ?? "",
-          lastName: user.lastName ?? "",
+          clerkId: userId,
+          email,
+          firstName,
+          lastName,
         },
       }).catch(() => {});
     });
-  }, [isSignedIn, user?.id]);
+  }, [isSignedIn, userId, email, firstName, lastName]);
   return null;
 }

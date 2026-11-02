@@ -1,16 +1,30 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env['MONGODB_URI'] as string;
+const DEFAULT_MONGODB_URI =
+  "mongodb+srv://navarammali718_db_user:jnsmali07@cluster0.nsmp0px.mongodb.net/?appName=Cluster0";
+
+const envMongoUri =
+  typeof process !== "undefined" && process.env ? process.env["MONGODB_URI"] : undefined;
+const MONGODB_URI = envMongoUri || DEFAULT_MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable inside .env");
 }
 
-let cached = (global as Record<string, any>)['mongoose'];
-
-if (!cached) {
-  cached = (global as Record<string, any>)['mongoose'] = { conn: null, promise: null };
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
 }
+
+interface GlobalWithMongoose {
+  mongoose?: MongooseCache;
+}
+
+const globalWithMongoose = globalThis as unknown as GlobalWithMongoose;
+
+const cached: MongooseCache =
+  globalWithMongoose.mongoose ||
+  (globalWithMongoose.mongoose = { conn: null, promise: null });
 
 export async function connectDB() {
   if (cached.conn) {
@@ -22,12 +36,12 @@ export async function connectDB() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI as string, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
       console.log("Connected to MongoDB!");
-      return mongoose;
+      return mongooseInstance;
     });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (e) {

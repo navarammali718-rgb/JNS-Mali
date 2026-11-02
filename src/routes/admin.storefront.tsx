@@ -1,9 +1,40 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef, useState, lazy, Suspense } from "react";
-import { Loader2, Save, ImagePlus, X, Search, MapPin, Maximize2, Minimize2, ArrowLeft, Plus, Trash2, Tag, ExternalLink } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  ImagePlus,
+  X,
+  Search,
+  MapPin,
+  Maximize2,
+  Minimize2,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Tag,
+  ExternalLink,
+  Truck,
+  ShieldCheck,
+  RotateCcw,
+  BadgeIndianRupee,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  Package,
+  Headphones,
+  HeartHandshake,
+  Award,
+  Zap,
+} from "lucide-react";
 
-const MapPicker = lazy(() => import('@/components/MapPicker'));
-import { getStorefrontFn, updateStorefrontFn, getCloudinarySignatureFn, getAdminProductsFn } from "@/server-functions";
+const MapPicker = lazy(() => import("@/components/MapPicker"));
+import {
+  getStorefrontFn,
+  updateStorefrontFn,
+  getCloudinarySignatureFn,
+  getAdminProductsFn,
+} from "@/server-functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -21,6 +52,27 @@ interface StoreBanner {
   linkUrl?: string;
 }
 
+export interface TrustBadge {
+  icon: string;
+  title: string;
+  sub: string;
+}
+
+const AVAILABLE_ICONS = [
+  { value: "Truck", label: "🚚 Delivery Truck" },
+  { value: "ShieldCheck", label: "🛡️ Quality Shield" },
+  { value: "RotateCcw", label: "🔄 Returns / Exchange" },
+  { value: "BadgeIndianRupee", label: "₹ Best Price / Rupee" },
+  { value: "Clock", label: "⏰ Fast Service / 24x7" },
+  { value: "Sparkles", label: "✨ Premium Quality" },
+  { value: "CheckCircle2", label: "✅ Verified Guarantee" },
+  { value: "Package", label: "📦 Safe Packaging" },
+  { value: "Headphones", label: "🎧 Dedicated Support" },
+  { value: "HeartHandshake", label: "🤝 Customer Satisfaction" },
+  { value: "Award", label: "🏆 Top Rated" },
+  { value: "Zap", label: "⚡ Express Fast" },
+];
+
 function AdminStorefront() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -37,6 +89,14 @@ function AdminStorefront() {
     freeDeliveryThreshold: 499,
     contactEmail: "contact@jnsmali.com",
     contactPhone: "+91 98765 43210",
+    whatsappNumber: "+91 98765 43210",
+    supportHours: "Mon–Sat, 9:00 AM – 8:00 PM",
+    trustBadges: [
+      { icon: "Truck", title: "Free delivery", sub: "Orders over ₹499" },
+      { icon: "ShieldCheck", title: "Quality checked", sub: "Useful, durable picks" },
+      { icon: "RotateCcw", title: "Easy returns", sub: "Within 7 days" },
+      { icon: "BadgeIndianRupee", title: "Better in bulk", sub: "Automatic tier prices" },
+    ] as TrustBadge[],
   });
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +119,9 @@ function AdminStorefront() {
   const [isDetecting, setIsDetecting] = useState(false);
   const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // India & Bangalore biased suggestions
   useEffect(() => {
@@ -71,7 +133,9 @@ function AdminStorefront() {
       try {
         const storeLat = form.adminLocationLat || 13.0285;
         const storeLng = form.adminLocationLng || 77.5462;
-        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=6`);
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=6`,
+        );
         if (res.ok) {
           const data = await res.json();
           const inFeatures = (data.features || []).filter((f: any) => {
@@ -88,24 +152,25 @@ function AdminStorefront() {
         // Fallback to Nominatim restricted to India
         const nomRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=5&addressdetails=1`,
-          { headers: { "Accept-Language": "en" } }
+          { headers: { "Accept-Language": "en" } },
         );
         if (nomRes.ok) {
           const nomData = await nomRes.json();
-          setSuggestions(nomData.map((item: any) => ({
-            geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
-            properties: {
-              name: item.name || item.display_name?.split(",")[0],
-              street: item.address?.road || item.address?.suburb,
-              city: item.address?.city || item.address?.town || "Bengaluru",
-              state: item.address?.state || "Karnataka",
-              country: "India",
-              postcode: item.address?.postcode || "",
-            }
-          })));
+          setSuggestions(
+            nomData.map((item: any) => ({
+              geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
+              properties: {
+                name: item.name || item.display_name?.split(",")[0],
+                street: item.address?.road || item.address?.suburb,
+                city: item.address?.city || item.address?.town || "Bengaluru",
+                state: item.address?.state || "Karnataka",
+                country: "India",
+                postcode: item.address?.postcode || "",
+              },
+            })),
+          );
         }
-      } catch (e) {
-      }
+      } catch (e) {}
     }, 350);
     return () => clearTimeout(delay);
   }, [searchQuery, form.adminLocationLat, form.adminLocationLng]);
@@ -117,7 +182,9 @@ function AdminStorefront() {
     try {
       const storeLat = form.adminLocationLat || 13.0285;
       const storeLng = form.adminLocationLng || 77.5462;
-      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=5`);
+      const res = await fetch(
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(searchQuery)}&lat=${storeLat}&lon=${storeLng}&limit=5`,
+      );
       if (res.ok) {
         const data = await res.json();
         const inFeatures = (data.features || []).filter((f: any) => {
@@ -132,7 +199,12 @@ function AdminStorefront() {
           const lng = parseFloat(s.geometry.coordinates[0]);
           const p = s.properties;
           const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
-          setForm(f => ({ ...f, adminLocationLat: lat, adminLocationLng: lng, adminLocationAddress: label }));
+          setForm((f) => ({
+            ...f,
+            adminLocationLat: lat,
+            adminLocationLng: lng,
+            adminLocationAddress: label,
+          }));
           setSearchQuery(label);
           return;
         }
@@ -140,13 +212,18 @@ function AdminStorefront() {
 
       const nomRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&viewbox=77.3,13.2,77.8,12.8&limit=1`,
-        { headers: { "Accept-Language": "en" } }
+        { headers: { "Accept-Language": "en" } },
       );
       if (nomRes.ok) {
         const nomData = await nomRes.json();
         if (nomData && nomData.length > 0) {
           const s = nomData[0];
-          setForm(f => ({ ...f, adminLocationLat: parseFloat(s.lat), adminLocationLng: parseFloat(s.lon), adminLocationAddress: s.display_name }));
+          setForm((f) => ({
+            ...f,
+            adminLocationLat: parseFloat(s.lat),
+            adminLocationLng: parseFloat(s.lon),
+            adminLocationAddress: s.display_name,
+          }));
           setSearchQuery(s.display_name);
           return;
         }
@@ -168,7 +245,7 @@ function AdminStorefront() {
     setIsDetecting(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setForm(f => ({
+        setForm((f) => ({
           ...f,
           adminLocationLat: pos.coords.latitude,
           adminLocationLng: pos.coords.longitude,
@@ -180,7 +257,7 @@ function AdminStorefront() {
         setIsDetecting(false);
         alert("Failed to get current location. Please check location permissions.");
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -190,9 +267,37 @@ function AdminStorefront() {
         const [data, prods] = await Promise.all([getStorefrontFn(), getAdminProductsFn()]);
         if (data) {
           // If banners array exists, use it. If not, seed with heroImage if available
-          let initialBanners: StoreBanner[] = data.banners && data.banners.length > 0
-            ? data.banners
-            : data.heroImage ? [{ imageUrl: data.heroImage, title: "Special Deal", priceTag: "", mrpTag: "", productId: "", linkUrl: "" }] : [];
+          const initialBanners: StoreBanner[] =
+            data.banners && data.banners.length > 0
+              ? data.banners
+              : data.heroImage
+                ? [
+                    {
+                      imageUrl: data.heroImage,
+                      title: "Special Deal",
+                      priceTag: "",
+                      mrpTag: "",
+                      productId: "",
+                      linkUrl: "",
+                    },
+                  ]
+                : [];
+
+          const defaultBadges: TrustBadge[] = [
+            {
+              icon: "Truck",
+              title: "Free delivery",
+              sub: `Orders over ₹${data.freeDeliveryThreshold ?? 499}`,
+            },
+            { icon: "ShieldCheck", title: "Quality checked", sub: "Useful, durable picks" },
+            { icon: "RotateCcw", title: "Easy returns", sub: "Within 7 days" },
+            { icon: "BadgeIndianRupee", title: "Better in bulk", sub: "Automatic tier prices" },
+          ];
+
+          const loadedBadges =
+            Array.isArray(data.trustBadges) && data.trustBadges.length === 4
+              ? data.trustBadges
+              : defaultBadges;
 
           setForm({
             announcement: data.announcement ?? "",
@@ -201,13 +306,17 @@ function AdminStorefront() {
             adminEmails: data.adminEmails ? data.adminEmails.join(", ") : "",
             adminLocationLat: data.adminLocationLat ?? 13.0285,
             adminLocationLng: data.adminLocationLng ?? 77.5462,
-            adminLocationAddress: data.adminLocationAddress ?? "Yeshwanthpur, Bengaluru, Karnataka, India",
+            adminLocationAddress:
+              data.adminLocationAddress ?? "Yeshwanthpur, Bengaluru, Karnataka, India",
             deliveryRadiusKm: data.deliveryRadiusKm ?? 10,
             deliveryFee: data.deliveryFee ?? 40,
             deliveryFeePerKm: data.deliveryFeePerKm ?? 0,
             freeDeliveryThreshold: data.freeDeliveryThreshold ?? 499,
             contactEmail: data.contactEmail ?? "contact@jnsmali.com",
             contactPhone: data.contactPhone ?? "+91 98765 43210",
+            whatsappNumber: data.whatsappNumber ?? "+91 98765 43210",
+            supportHours: data.supportHours ?? "Mon–Sat, 9:00 AM – 8:00 PM",
+            trustBadges: loadedBadges,
           });
         }
         setProducts(prods.map((p: any) => ({ ...p, id: p._id || p.id })));
@@ -229,10 +338,13 @@ function AdminStorefront() {
       fd.append("api_key", apiKey);
       fd.append("timestamp", String(timestamp));
       fd.append("signature", signature);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: fd });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: fd,
+      });
       const data = await res.json();
       if (data.secure_url) {
-        setForm(f => {
+        setForm((f) => {
           const updated = [...f.banners];
           if (!updated[index]) {
             updated[index] = { imageUrl: data.secure_url, title: "" };
@@ -256,17 +368,25 @@ function AdminStorefront() {
   }
 
   function addBanner() {
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
       banners: [
         ...f.banners,
-        { imageUrl: "", title: "", subtitle: "", priceTag: "", mrpTag: "", productId: "", linkUrl: "" }
-      ]
+        {
+          imageUrl: "",
+          title: "",
+          subtitle: "",
+          priceTag: "",
+          mrpTag: "",
+          productId: "",
+          linkUrl: "",
+        },
+      ],
     }));
   }
 
   function removeBanner(idx: number) {
-    setForm(f => {
+    setForm((f) => {
       const updated = f.banners.filter((_, i) => i !== idx);
       return {
         ...f,
@@ -277,17 +397,18 @@ function AdminStorefront() {
   }
 
   function updateBannerField(idx: number, field: keyof StoreBanner, val: string) {
-    setForm(f => {
+    setForm((f) => {
       const updated = [...f.banners];
       if (updated[idx]) {
         updated[idx] = { ...updated[idx], [field]: val };
 
         if (field === "productId" && val) {
-          const matchedProd = products.find(p => p.id === val);
+          const matchedProd = products.find((p) => p.id === val);
           if (matchedProd) {
             if (!updated[idx].title) updated[idx].title = matchedProd.name;
             if (!updated[idx].priceTag) updated[idx].priceTag = `₹${matchedProd.price}`;
-            if (!updated[idx].mrpTag && matchedProd.mrp) updated[idx].mrpTag = `₹${matchedProd.mrp}`;
+            if (!updated[idx].mrpTag && matchedProd.mrp)
+              updated[idx].mrpTag = `₹${matchedProd.mrp}`;
             if (!updated[idx].imageUrl && (matchedProd.imageUrl || matchedProd.image)) {
               updated[idx].imageUrl = matchedProd.imageUrl || matchedProd.image;
             }
@@ -302,6 +423,16 @@ function AdminStorefront() {
     });
   }
 
+  function updateBadge(idx: number, field: keyof TrustBadge, val: string) {
+    setForm((f) => {
+      const updated = [...f.trustBadges];
+      if (updated[idx]) {
+        updated[idx] = { ...updated[idx], [field]: val };
+      }
+      return { ...f, trustBadges: updated };
+    });
+  }
+
   async function handleImageUpload(file: File) {
     setUploading(true);
     try {
@@ -311,7 +442,10 @@ function AdminStorefront() {
       fd.append("api_key", apiKey);
       fd.append("timestamp", String(timestamp));
       fd.append("signature", signature);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: "POST", body: fd });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: fd,
+      });
       const data = await res.json();
       if (data.secure_url) setForm((f) => ({ ...f, heroImage: data.secure_url }));
       else setError("Image upload failed.");
@@ -327,27 +461,30 @@ function AdminStorefront() {
     setError("");
     setSaved(false);
     try {
-      const validBanners = form.banners.filter(b => b.imageUrl && b.imageUrl.trim().length > 0);
+      const validBanners = form.banners.filter((b) => b.imageUrl && b.imageUrl.trim().length > 0);
       const payload = {
         ...form,
         banners: validBanners,
         heroImage: validBanners[0]?.imageUrl || form.heroImage,
-        adminEmails: form.adminEmails.split(",").map(s => s.trim()).filter(Boolean),
+        adminEmails: form.adminEmails
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       };
       await updateStorefrontFn({ data: payload });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e: any) {
       setError(e?.message ?? "Save failed.");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setSaving(false);
     }
   }
 
   async function handleReset() {
-    setForm(f => ({
+    setForm((f) => ({
       ...f,
       announcement: "Free delivery on orders over ₹499",
       heroImage: "",
@@ -370,7 +507,9 @@ function AdminStorefront() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Settings</h1>
-          <p className="mt-1 font-medium text-slate-500">Manage your store configurations and appearance</p>
+          <p className="mt-1 font-medium text-slate-500">
+            Manage your store configurations and appearance
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleSave} disabled={saving} className="gap-2 w-full sm:w-auto">
@@ -380,16 +519,26 @@ function AdminStorefront() {
         </div>
       </div>
 
-      {error && <div className="rounded-xl bg-red-500/20 px-4 py-3 text-sm text-red-400">{error}</div>}
-      {saved && <div className="rounded-xl bg-emerald-500/20 px-4 py-3 text-sm text-emerald-400">✓ Changes saved successfully!</div>}
+      {error && (
+        <div className="rounded-xl bg-red-500/20 px-4 py-3 text-sm text-red-400">{error}</div>
+      )}
+      {saved && (
+        <div className="rounded-xl bg-emerald-500/20 px-4 py-3 text-sm text-emerald-400">
+          ✓ Changes saved successfully!
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Admin Access & Contact Info */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2">
-          <h2 className="font-bold text-xl text-slate-900 border-b border-slate-100 pb-4 mb-4">Admin Access & Public Contact Info</h2>
+          <h2 className="font-bold text-xl text-slate-900 border-b border-slate-100 pb-4 mb-4">
+            Admin Access & Public Contact Info
+          </h2>
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-1.5">Authorized Emails (Comma separated)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-1.5">
+                Authorized Emails (Comma separated)
+              </label>
               <textarea
                 value={form.adminEmails}
                 onChange={(e) => setForm((f) => ({ ...f, adminEmails: e.target.value }))}
@@ -400,23 +549,57 @@ function AdminStorefront() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-bold text-slate-700">Contact Email (For Bills/Footer)</label>
-                <Input
-                  value={form.contactEmail}
-                  onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
-                  placeholder="contact@jnsmali.com"
-                  className="bg-white border-slate-200 text-slate-900 shadow-sm"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                    Contact Email (Website/Bills)
+                  </label>
+                  <Input
+                    value={form.contactEmail}
+                    onChange={(e) => setForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                    placeholder="contact@jnsmali.com"
+                    className="bg-white border-slate-200 text-slate-900 shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                    Contact Phone (Voice Calls)
+                  </label>
+                  <Input
+                    value={form.contactPhone}
+                    onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                    placeholder="+91 98765 43210"
+                    className="bg-white border-slate-200 text-slate-900 shadow-sm"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-bold text-slate-700">Contact Phone (For Bills/Footer)</label>
-                <Input
-                  value={form.contactPhone}
-                  onChange={(e) => setForm((f) => ({ ...f, contactPhone: e.target.value }))}
-                  placeholder="+91 98765 43210"
-                  className="bg-white border-slate-200 text-slate-900 shadow-sm"
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                    WhatsApp Support Number
+                  </label>
+                  <Input
+                    value={form.whatsappNumber}
+                    onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value }))}
+                    placeholder="+91 98765 43210"
+                    className="bg-white border-slate-200 text-slate-900 shadow-sm"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Customers can click to start a WhatsApp chat
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                    Working / Support Hours
+                  </label>
+                  <Input
+                    value={form.supportHours}
+                    onChange={(e) => setForm((f) => ({ ...f, supportHours: e.target.value }))}
+                    placeholder="Mon–Sat, 9:00 AM – 8:00 PM"
+                    className="bg-white border-slate-200 text-slate-900 shadow-sm"
+                  />
+                  <p className="mt-1 text-[11px] text-slate-500">Displayed on the Contact page</p>
+                </div>
               </div>
             </div>
           </div>
@@ -426,45 +609,65 @@ function AdminStorefront() {
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-slate-900">Delivery Range Settings</h2>
-            <Button variant="outline" size="sm" onClick={() => setIsChangingLocation(!isChangingLocation)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsChangingLocation(!isChangingLocation)}
+            >
               {isChangingLocation ? "Cancel" : "Change Base Location"}
             </Button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="mb-1.5 block text-sm font-bold text-slate-700">Delivery Radius (km)</label>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                Delivery Radius (km)
+              </label>
               <Input
                 type="number"
                 value={form.deliveryRadiusKm}
-                onChange={(e) => setForm((f) => ({ ...f, deliveryRadiusKm: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, deliveryRadiusKm: parseFloat(e.target.value) || 0 }))
+                }
                 className="bg-white border-slate-200 text-slate-900 shadow-sm"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-bold text-slate-700">Base Delivery Fee (₹)</label>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                Base Delivery Fee (₹)
+              </label>
               <Input
                 type="number"
                 value={form.deliveryFee}
-                onChange={(e) => setForm((f) => ({ ...f, deliveryFee: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, deliveryFee: parseFloat(e.target.value) || 0 }))
+                }
                 className="bg-white border-slate-200 text-slate-900 shadow-sm"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-bold text-slate-700">Extra Fee per km (₹)</label>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                Extra Fee per km (₹)
+              </label>
               <Input
                 type="number"
                 value={form.deliveryFeePerKm}
-                onChange={(e) => setForm((f) => ({ ...f, deliveryFeePerKm: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, deliveryFeePerKm: parseFloat(e.target.value) || 0 }))
+                }
                 className="bg-white border-slate-200 text-slate-900 shadow-sm"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-bold text-slate-700">Free Delivery Above (₹)</label>
+              <label className="mb-1.5 block text-sm font-bold text-slate-700">
+                Free Delivery Above (₹)
+              </label>
               <Input
                 type="number"
                 value={form.freeDeliveryThreshold}
-                onChange={(e) => setForm((f) => ({ ...f, freeDeliveryThreshold: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, freeDeliveryThreshold: parseFloat(e.target.value) || 0 }))
+                }
                 className="bg-white border-slate-200 text-slate-900 shadow-sm"
               />
             </div>
@@ -494,8 +697,20 @@ function AdminStorefront() {
                     }
                   }}
                 />
-                <Button type="button" variant="secondary" onClick={() => { setShowSuggestions(false); handleSearchMap(); }} disabled={isSearching}>
-                  {isSearching ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setShowSuggestions(false);
+                    handleSearchMap();
+                  }}
+                  disabled={isSearching}
+                >
+                  {isSearching ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Search className="size-4" />
+                  )}
                 </Button>
 
                 {/* Autocomplete Dropdown */}
@@ -503,7 +718,9 @@ function AdminStorefront() {
                   <div className="absolute top-12 left-0 right-[4.5rem] z-[100] bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                     {suggestions.map((s, i) => {
                       const p = s.properties;
-                      const label = [p.name, p.street, p.city, p.state, p.country].filter(Boolean).join(", ");
+                      const label = [p.name, p.street, p.city, p.state, p.country]
+                        .filter(Boolean)
+                        .join(", ");
                       return (
                         <button
                           key={i}
@@ -515,7 +732,12 @@ function AdminStorefront() {
                             const lat = s.geometry.coordinates[1];
                             setSearchQuery(label);
                             setShowSuggestions(false);
-                            setForm(f => ({ ...f, adminLocationLat: lat, adminLocationLng: lng, adminLocationAddress: label }));
+                            setForm((f) => ({
+                              ...f,
+                              adminLocationLat: lat,
+                              adminLocationLng: lng,
+                              adminLocationAddress: label,
+                            }));
                           }}
                         >
                           {label}
@@ -527,25 +749,58 @@ function AdminStorefront() {
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-slate-700">Pin your base location</label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Pin your base location
+                </label>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsMapFullscreen(prev => !prev)}>
-                    {isMapFullscreen ? <Minimize2 className="size-3.5 mr-1" /> : <Maximize2 className="size-3.5 mr-1" />}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsMapFullscreen((prev) => !prev)}
+                  >
+                    {isMapFullscreen ? (
+                      <Minimize2 className="size-3.5 mr-1" />
+                    ) : (
+                      <Maximize2 className="size-3.5 mr-1" />
+                    )}
                     {isMapFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
-                    {isDetecting ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : <MapPin className="mr-2 size-3.5" />}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAutoDetect}
+                    disabled={isDetecting}
+                  >
+                    {isDetecting ? (
+                      <Loader2 className="mr-2 size-3.5 animate-spin" />
+                    ) : (
+                      <MapPin className="mr-2 size-3.5" />
+                    )}
                     {isDetecting ? "Detecting..." : "Auto Detect"}
                   </Button>
                 </div>
               </div>
 
-              <div className={`${isMapFullscreen ? "fixed inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-2rem)]" : "h-[400px]"} w-full rounded-lg border border-slate-200 overflow-hidden relative bg-slate-50 transition-all duration-300`}>
+              <div
+                className={`${isMapFullscreen ? "fixed inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-2rem)]" : "h-[400px]"} w-full rounded-lg border border-slate-200 overflow-hidden relative bg-slate-50 transition-all duration-300`}
+              >
                 {mounted && (
-                  <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm font-medium text-slate-500">Loading map...</div>}>
+                  <Suspense
+                    fallback={
+                      <div className="h-full w-full flex items-center justify-center text-sm font-medium text-slate-500">
+                        Loading map...
+                      </div>
+                    }
+                  >
                     <MapPicker
-                      position={form.adminLocationLat && form.adminLocationLng ? [form.adminLocationLat, form.adminLocationLng] : null}
-                      setPosition={(p) => setForm(f => ({ ...f, adminLocationLat: p[0], adminLocationLng: p[1] }))}
+                      position={
+                        form.adminLocationLat && form.adminLocationLng
+                          ? [form.adminLocationLat, form.adminLocationLng]
+                          : null
+                      }
+                      setPosition={(p) =>
+                        setForm((f) => ({ ...f, adminLocationLat: p[0], adminLocationLng: p[1] }))
+                      }
                     />
                   </Suspense>
                 )}
@@ -570,10 +825,14 @@ function AdminStorefront() {
                 {form.adminLocationAddress}
               </div>
               <div>
-                <span className="opacity-70">Coordinates: {form.adminLocationLat.toFixed(4)}, {form.adminLocationLng.toFixed(4)}</span>
+                <span className="opacity-70">
+                  Coordinates: {form.adminLocationLat.toFixed(4)},{" "}
+                  {form.adminLocationLng.toFixed(4)}
+                </span>
               </div>
               <div className="mt-1">
-                Customers outside {form.deliveryRadiusKm}km of this location will not be able to place an order.
+                Customers outside {form.deliveryRadiusKm}km of this location will not be able to
+                place an order.
               </div>
             </div>
           )}
@@ -585,7 +844,8 @@ function AdminStorefront() {
             <div>
               <h2 className="font-black text-xl text-slate-900">Front Store Banners & Offers</h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                Add multiple promotional banners. They scroll horizontally on the website and take customers to the selected product when tapped.
+                Add multiple promotional banners. They scroll horizontally on the website and take
+                customers to the selected product when tapped.
               </p>
             </div>
             <Button onClick={addBanner} size="sm" className="gap-1.5 font-bold shadow-sm">
@@ -599,9 +859,14 @@ function AdminStorefront() {
             <div>
               <p className="font-bold text-sm">Recommended Banner Image Guidelines:</p>
               <ul className="mt-1 list-disc list-inside space-y-0.5 text-blue-800">
-                <li>Ideal dimensions: <b>1200 x 500 px</b> (or roughly 16:7 / 2:1 aspect ratio).</li>
+                <li>
+                  Ideal dimensions: <b>1200 x 500 px</b> (or roughly 16:7 / 2:1 aspect ratio).
+                </li>
                 <li>PNG, JPG, or WebP format (max 5MB).</li>
-                <li>Keep important graphics and text towards the center so mobile screens display them cleanly without edge cutoff.</li>
+                <li>
+                  Keep important graphics and text towards the center so mobile screens display them
+                  cleanly without edge cutoff.
+                </li>
               </ul>
             </div>
           </div>
@@ -610,8 +875,12 @@ function AdminStorefront() {
           {form.banners.length === 0 ? (
             <div className="rounded-xl border-2 border-dashed border-slate-300 p-8 text-center bg-slate-50">
               <ImagePlus className="mx-auto size-10 text-slate-400" />
-              <p className="mt-2 text-sm font-semibold text-slate-600">No custom banners added yet.</p>
-              <p className="text-xs text-slate-400 mt-1">The website will use the default hero banner until you add one.</p>
+              <p className="mt-2 text-sm font-semibold text-slate-600">
+                No custom banners added yet.
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                The website will use the default hero banner until you add one.
+              </p>
               <Button onClick={addBanner} size="sm" variant="outline" className="mt-4 gap-1.5">
                 <Plus className="size-3.5" /> Add First Banner
               </Button>
@@ -619,13 +888,19 @@ function AdminStorefront() {
           ) : (
             <div className="space-y-6">
               {form.banners.map((b, idx) => (
-                <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm space-y-4">
+                <div
+                  key={idx}
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm space-y-4"
+                >
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                     <span className="font-extrabold text-sm text-slate-800 flex items-center gap-2">
                       <span className="grid size-6 place-items-center rounded-full bg-primary text-white text-xs font-black">
                         {idx + 1}
                       </span>
-                      Banner #{idx + 1} {idx === 0 && <span className="text-xs text-primary font-bold">(Main Banner)</span>}
+                      Banner #{idx + 1}{" "}
+                      {idx === 0 && (
+                        <span className="text-xs text-primary font-bold">(Main Banner)</span>
+                      )}
                     </span>
                     <Button
                       variant="ghost"
@@ -640,14 +915,22 @@ function AdminStorefront() {
                   <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
                     {/* Image Preview & Upload */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Banner Image *</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        Banner Image *
+                      </label>
                       <div className="relative aspect-[16/8] rounded-lg border border-slate-300 bg-white overflow-hidden flex items-center justify-center">
                         {b.imageUrl ? (
-                          <img src={b.imageUrl} alt={b.title || "Banner"} className="size-full object-cover" />
+                          <img
+                            src={b.imageUrl}
+                            alt={b.title || "Banner"}
+                            className="size-full object-cover"
+                          />
                         ) : (
                           <div className="p-4 text-center">
                             <ImagePlus className="mx-auto size-8 text-slate-400" />
-                            <p className="text-xs text-slate-500 font-medium mt-1">No image uploaded</p>
+                            <p className="text-xs text-slate-500 font-medium mt-1">
+                              No image uploaded
+                            </p>
                           </div>
                         )}
                         {bannerUploadingIdx === idx && (
@@ -694,7 +977,9 @@ function AdminStorefront() {
                     {/* Banner Configuration & Links */}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="sm:col-span-2">
-                        <label className="block text-xs font-bold text-slate-700 mb-1">Banner Title / Caption</label>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Banner Title / Caption
+                        </label>
                         <Input
                           value={b.title}
                           onChange={(e) => updateBannerField(idx, "title", e.target.value)}
@@ -715,14 +1000,15 @@ function AdminStorefront() {
                           className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="">-- No specific product (Default Shop link) --</option>
-                          {products.map(p => (
+                          {products.map((p) => (
                             <option key={p.id} value={p.id}>
                               {p.name} (₹{p.price} {p.mrp ? `| MRP: ₹${p.mrp}` : ""})
                             </option>
                           ))}
                         </select>
                         <p className="mt-1 text-[11px] text-slate-500">
-                          When clicked on the home screen, customers will be taken directly to this product's page.
+                          When clicked on the home screen, customers will be taken directly to this
+                          product's page.
                         </p>
                       </div>
 
@@ -761,9 +1047,13 @@ function AdminStorefront() {
 
         {/* Announcement Bar */}
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2 space-y-4">
-          <h2 className="font-bold text-xl text-slate-900 border-b border-slate-100 pb-3">Announcement Banner</h2>
+          <h2 className="font-bold text-xl text-slate-900 border-b border-slate-100 pb-3">
+            Announcement Banner
+          </h2>
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-1.5">Top Bar Announcement Text</label>
+            <label className="block text-sm font-bold text-slate-700 mb-1.5">
+              Top Bar Announcement Text
+            </label>
             <Input
               value={form.announcement}
               onChange={(e) => setForm((f) => ({ ...f, announcement: e.target.value }))}
@@ -775,6 +1065,130 @@ function AdminStorefront() {
                 {form.announcement}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Store Trust Highlights (4 Badges Above Footer) */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 lg:col-span-2 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="font-bold text-xl text-slate-900">
+                Store Trust Highlights (4 Badges Above Footer)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Customize the 4 value proposition badges shown on the customer homepage right above
+                the footer.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setForm((f) => ({
+                  ...f,
+                  trustBadges: [
+                    {
+                      icon: "Truck",
+                      title: "Free delivery",
+                      sub: `Orders over ₹${f.freeDeliveryThreshold || 499}`,
+                    },
+                    { icon: "ShieldCheck", title: "Quality checked", sub: "Useful, durable picks" },
+                    { icon: "RotateCcw", title: "Easy returns", sub: "Within 7 days" },
+                    {
+                      icon: "BadgeIndianRupee",
+                      title: "Better in bulk",
+                      sub: "Automatic tier prices",
+                    },
+                  ],
+                }));
+              }}
+              className="text-xs font-semibold"
+            >
+              Reset to Defaults
+            </Button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-2">
+            {form.trustBadges.map((badge, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3 shadow-xs"
+              >
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                  <span className="font-black text-xs text-slate-800 flex items-center gap-1.5">
+                    <span className="grid size-5 place-items-center rounded-full bg-primary text-white text-[10px] font-black">
+                      {idx + 1}
+                    </span>
+                    Badge #{idx + 1}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-400">Position {idx + 1}</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Icon</label>
+                  <select
+                    value={badge.icon}
+                    onChange={(e) => updateBadge(idx, "icon", e.target.value)}
+                    className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-900 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {AVAILABLE_ICONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Title</label>
+                  <Input
+                    value={badge.title}
+                    onChange={(e) => updateBadge(idx, "title", e.target.value)}
+                    placeholder="e.g. Free delivery"
+                    className="bg-white text-xs h-8 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Subtitle / Details
+                  </label>
+                  <Input
+                    value={badge.sub}
+                    onChange={(e) => updateBadge(idx, "sub", e.target.value)}
+                    placeholder="e.g. Orders over ₹499"
+                    className="bg-white text-xs h-8"
+                  />
+                </div>
+
+                {/* Live Preview */}
+                <div className="rounded-lg border border-slate-200 bg-white p-2.5 flex items-center gap-2.5">
+                  <div className="size-7 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
+                    {badge.icon === "Truck" && <Truck className="size-4" />}
+                    {badge.icon === "ShieldCheck" && <ShieldCheck className="size-4" />}
+                    {badge.icon === "RotateCcw" && <RotateCcw className="size-4" />}
+                    {badge.icon === "BadgeIndianRupee" && <BadgeIndianRupee className="size-4" />}
+                    {badge.icon === "Clock" && <Clock className="size-4" />}
+                    {badge.icon === "Sparkles" && <Sparkles className="size-4" />}
+                    {badge.icon === "CheckCircle2" && <CheckCircle2 className="size-4" />}
+                    {badge.icon === "Package" && <Package className="size-4" />}
+                    {badge.icon === "Headphones" && <Headphones className="size-4" />}
+                    {badge.icon === "HeartHandshake" && <HeartHandshake className="size-4" />}
+                    {badge.icon === "Award" && <Award className="size-4" />}
+                    {badge.icon === "Zap" && <Zap className="size-4" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {badge.title || "Untitled"}
+                    </p>
+                    <p className="text-[10px] text-slate-500 truncate">
+                      {badge.sub || "No subtitle"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

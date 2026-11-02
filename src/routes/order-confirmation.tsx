@@ -43,7 +43,7 @@ function Page() {
           <div>
             <b>Order {shortId} confirmed</b>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your order is pending and will be prepared for dispatch soon. Estimated delivery: 2–4 business days.
+              Your order is pending and will be prepared for dispatch soon with fast delivery.
             </p>
           </div>
         </div>

@@ -152,6 +152,13 @@ export const getUserOrdersFn = createServerFn({ method: "POST" })
 
 export const getAllOrdersFn = createServerFn({ method: "GET" }).handler(async () => {
   await connectDB();
+  // Auto-delete cancelled orders older than 15 days
+  try {
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    await Order.deleteMany({ status: "cancelled", updatedAt: { $lt: fifteenDaysAgo } }).exec();
+  } catch (err) {
+    console.error("Auto cleanup of cancelled orders error:", err);
+  }
   const orders = await Order.find({}).sort({ createdAt: -1 }).lean().exec();
   return JSON.parse(JSON.stringify(orders));
 });
@@ -178,15 +185,15 @@ export const updateOrderStatusFn = createServerFn({ method: "POST" })
 });
 
 export const updateOrderItemsFn = createServerFn({ method: "POST" })
-  .validator((data: { id: string; items: Array<{ productId: any; name: string; quantity: number; price: number; image?: string }> }) => data)
+  .validator((data: { id: string; items: Array<{ productId: any; name: string; quantity: number; price: number; image?: string }>; deliveryFee?: number }) => data)
   .handler(async ({ data }) => {
     await connectDB();
     const order = await Order.findById(data.id).exec();
     if (!order) throw new Error("Order not found");
 
-    // Calculate existing shipping fee
+    // Calculate existing shipping fee or use provided deliveryFee
     const oldSubtotal = order.items.reduce((sum: number, it: any) => sum + (Number(it.price || 0) * Number(it.quantity || 0)), 0);
-    const deliveryFee = Math.max(0, (order.totalAmount || 0) - oldSubtotal);
+    const deliveryFee = typeof data.deliveryFee === "number" ? Math.max(0, data.deliveryFee) : Math.max(0, (order.totalAmount || 0) - oldSubtotal);
 
     // Keep items with quantity > 0
     const validItems = data.items.filter(it => Number(it.quantity) > 0);
@@ -197,6 +204,140 @@ export const updateOrderItemsFn = createServerFn({ method: "POST" })
     order.totalAmount = newTotalAmount;
     await order.save();
     return JSON.parse(JSON.stringify(order));
+});
+
+export const updateOrderDeliveryFeeFn = createServerFn({ method: "POST" })
+  .validator((data: { id: string; deliveryFee: number }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const order = await Order.findById(data.id).exec();
+    if (!order) throw new Error("Order not found");
+
+    const subtotal = order.items.reduce((sum: number, it: any) => sum + (Number(it.price || 0) * Number(it.quantity || 0)), 0);
+    const fee = Math.max(0, Number(data.deliveryFee || 0));
+    order.totalAmount = subtotal + fee;
+    await order.save();
+    return JSON.parse(JSON.stringify(order));
+});
+
+export const deleteOrderFn = createServerFn({ method: "POST" })
+  .validator((data: { orderId: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    await Order.findByIdAndDelete(data.orderId).exec();
+    return { success: true };
+});
+
+export const deleteCancelledOrdersFn = createServerFn({ method: "POST" })
+  .validator((data: { olderThanDays?: number }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    let query: any = { status: "cancelled" };
+    if (data.olderThanDays && data.olderThanDays > 0) {
+      const cutoff = new Date(Date.now() - data.olderThanDays * 24 * 60 * 60 * 1000);
+      query.updatedAt = { $lt: cutoff };
+    }
+    const res = await Order.deleteMany(query).exec();
+    return { deletedCount: res.deletedCount };
+});
+
+export const deleteOldOrdersFn = createServerFn({ method: "POST" })
+  .validator((data: { months: number; status?: string }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - data.months);
+    const query: any = {
+      createdAt: { $lt: cutoff },
+      status: { $ne: "pending" }, // Do not delete pending active orders
+    };
+    if (data.status && data.status !== "all") {
+      query.status = data.status;
+    }
+    const res = await Order.deleteMany(query).exec();
+    return { deletedCount: res.deletedCount };
+});
+
+export const adminCreateOrderFn = createServerFn({ method: "POST" })
+  .validator((data: {
+    userId: string;
+    items: Array<{ productId: any; name: string; quantity: number; price: number; image?: string }>;
+    totalAmount: number;
+    paymentMethod: string;
+    status: string;
+    shippingDetails: {
+      fullName: string;
+      address: string;
+      city: string;
+      postalCode: string;
+      phone: string;
+      lat?: number;
+      lng?: number;
+    };
+  }) => data)
+  .handler(async ({ data }) => {
+    await connectDB();
+    const order = new Order(data);
+    await order.save();
+    return JSON.parse(JSON.stringify(order));
+});
+
+export const getDbStatsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const mongooseInstance = await connectDB();
+  // Auto-cleanup cancelled orders older than 15 days
+  try {
+    const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000);
+    await Order.deleteMany({ status: "cancelled", updatedAt: { $lt: fifteenDaysAgo } }).exec();
+  } catch (e) {}
+
+  let dbStats: any = {};
+  try {
+    if (mongooseInstance.connection?.db) {
+      dbStats = await mongooseInstance.connection.db.command({ dbStats: 1 });
+    }
+  } catch (e) {
+    try {
+      if (mongooseInstance.connection?.db) {
+        dbStats = await mongooseInstance.connection.db.stats();
+      }
+    } catch (err) {
+      console.error("Failed to fetch mongo dbStats:", err);
+    }
+  }
+
+  const [productsCount, ordersCount, usersCount, categoriesCount, cancelledOrdersCount] = await Promise.all([
+    Product.countDocuments(),
+    Order.countDocuments(),
+    User.countDocuments(),
+    Category.countDocuments(),
+    Order.countDocuments({ status: "cancelled" }),
+  ]);
+
+  // MongoDB Atlas M0 free tier storage ceiling is 512 MB
+  const maxStorageMB = 512;
+  const storageSizeBytes = dbStats.storageSize || dbStats.dataSize || 0;
+  const dataSizeBytes = dbStats.dataSize || 0;
+  const storageUsedMB = +(storageSizeBytes / (1024 * 1024)).toFixed(2);
+  const dataUsedMB = +(dataSizeBytes / (1024 * 1024)).toFixed(2);
+  const freeStorageMB = +Math.max(0, maxStorageMB - storageUsedMB).toFixed(2);
+  const percentUsed = +Math.min(100, (storageUsedMB / maxStorageMB) * 100).toFixed(1);
+
+  return {
+    maxStorageMB,
+    storageUsedMB,
+    dataUsedMB,
+    freeStorageMB,
+    percentUsed,
+    objectsCount: dbStats.objects || (productsCount + ordersCount + usersCount + categoriesCount),
+    collectionsCount: dbStats.collections || 5,
+    counts: {
+      products: productsCount,
+      orders: ordersCount,
+      users: usersCount,
+      categories: categoriesCount,
+      cancelledOrders: cancelledOrdersCount,
+    },
+  };
 });
 
 export const getStorefrontFn = createServerFn({ method: "GET" }).handler(async () => {

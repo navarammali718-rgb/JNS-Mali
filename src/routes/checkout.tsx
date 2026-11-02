@@ -655,8 +655,8 @@ function Checkout() {
               <h2 className="text-2xl font-black">Delivery method</h2>
               <label className="mt-5 flex cursor-pointer items-center justify-between rounded-lg border-2 border-primary bg-accent/30 p-4">
                 <span>
-                  <b>Standard delivery</b>
-                  <small className="block text-muted-foreground">Arrives in 2–4 business days</small>
+                  <b>Fast delivery</b>
+                  <small className="block text-muted-foreground">Fast, reliable local delivery</small>
                 </span>
                 <b>{delivery === 0 ? "FREE" : `₹${calculatedDeliveryFee}`}</b>
               </label>

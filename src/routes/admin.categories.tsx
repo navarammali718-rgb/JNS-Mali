@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Tag, ArrowLeft, Package, ExternalLink, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Tag, ArrowLeft, Package, ExternalLink, Eye, Search, CheckCircle2 } from "lucide-react";
 import {
   getCategoriesFn,
   createCategoryFn,
@@ -25,6 +25,7 @@ function AdminCategories() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<any | null>(null);
+  const [prodSearch, setProdSearch] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -228,101 +229,188 @@ function AdminCategories() {
         </div>
       )}
 
-      {/* Products In Category Modal / Viewer (Requirement 4) */}
+      {/* Products In Category Modal / Viewer */}
       {selectedCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 bg-slate-50">
               <div className="flex items-center gap-3">
-                <div className="size-10 rounded-lg overflow-hidden bg-slate-200 border border-slate-300">
-                  {selectedCategory.image && <img src={selectedCategory.image} alt="" className="size-full object-cover" />}
+                <div className="size-11 rounded-xl overflow-hidden bg-white border border-slate-200 shadow-sm shrink-0 flex items-center justify-center">
+                  {selectedCategory.image ? (
+                    <img src={selectedCategory.image} alt="" className="size-full object-cover" />
+                  ) : (
+                    <Tag className="size-5 text-slate-400" />
+                  )}
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">{selectedCategory.name}</h2>
-                  <p className="text-xs font-medium text-slate-500">
-                    {selectedCategoryProducts.length} products listed in this category
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg sm:text-xl font-black text-slate-900">{selectedCategory.name}</h2>
+                    <span className="rounded-full bg-primary/10 text-primary font-bold text-[11px] px-2.5 py-0.5">
+                      {selectedCategoryProducts.length} items
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Click any product or &quot;Edit&quot; button to edit price, stock, or photos
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedCategory(null)}>
-                <X className="size-5 text-slate-500" />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => { setSelectedCategory(null); setProdSearch(""); }}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                <X className="size-5" />
               </Button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {selectedCategoryProducts.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Package className="mx-auto size-12 text-slate-300" />
-                  <p className="mt-3 text-sm font-semibold text-slate-600">No products in this category yet.</p>
-                  <p className="text-xs text-slate-400 mt-1">Go to Products section to add items under this category.</p>
-                  <Button asChild size="sm" className="mt-4 gap-1.5 font-bold">
-                    <Link to="/admin/products">Go to Products</Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {selectedCategoryProducts.map((p) => {
-                    const discount = p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
-                    return (
-                      <Link
-                        key={p.id}
-                        to="/product/$id"
-                        params={{ id: p.id }}
-                        className="group flex gap-3 rounded-xl border border-slate-200 p-3 bg-white shadow-sm items-center hover:border-primary/60 hover:shadow-md transition active:scale-[0.99] cursor-pointer"
-                        title={`Click to view ${p.name}`}
-                      >
-                        <div className="size-16 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                          <img
-                            src={p.imageUrl || p.image || "/placeholder.png"}
-                            alt={p.name}
-                            className="size-full object-contain p-1 group-hover:scale-105 transition"
-                            onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.png"; }}
-                          />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-1">
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary transition truncate">{p.name}</p>
-                            <ExternalLink className="size-3.5 text-slate-400 group-hover:text-primary shrink-0 transition" />
-                          </div>
-                          <div className="flex items-baseline gap-1.5 mt-0.5">
-                            <span className="text-sm font-black text-primary">{formatPrice(p.price)}</span>
-                            {p.mrp && p.mrp > p.price && (
-                              <span className="text-xs text-slate-400 line-through">{formatPrice(p.mrp)}</span>
-                            )}
-                            {discount > 0 && (
-                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                                {discount}% off
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-[10px] text-slate-500 font-semibold">
-                              {p.unit || "Piece"}
-                            </span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                              p.isAvailable !== false ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
-                            }`}>
-                              {p.isAvailable !== false ? "Available" : "Hidden"}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="border-t border-slate-100 p-4 bg-slate-50 flex items-center justify-between">
-              <Button variant="outline" size="sm" onClick={() => setSelectedCategory(null)}>
-                Close
-              </Button>
-              <Button asChild size="sm" className="gap-1.5 font-bold">
+            {/* Sub-header with search and filter */}
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100 bg-white">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={prodSearch}
+                  onChange={(e) => setProdSearch(e.target.value)}
+                  placeholder={`Search inside ${selectedCategory.name}…`}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-8 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {prodSearch && (
+                  <button
+                    onClick={() => setProdSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+              <Button asChild size="sm" className="gap-1.5 font-bold shrink-0 shadow-sm text-xs h-8">
                 <Link to="/admin/products">
-                  <span>Manage in Products Panel</span>
-                  <ExternalLink className="size-3.5" />
+                  <Plus className="size-3.5" /> Add Product
                 </Link>
               </Button>
+            </div>
+
+            {/* Product Grid */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {(() => {
+                const filteredProds = selectedCategoryProducts.filter((p) =>
+                  !prodSearch.trim() || p.name?.toLowerCase().includes(prodSearch.toLowerCase())
+                );
+
+                if (filteredProds.length === 0) {
+                  return (
+                    <div className="py-14 text-center">
+                      <Package className="mx-auto size-12 text-slate-300" />
+                      <p className="mt-3 text-sm font-bold text-slate-700">
+                        {selectedCategoryProducts.length === 0
+                          ? "No products listed in this category yet."
+                          : "No products match your search."}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                        Add products from the Products panel and set their category to &quot;{selectedCategory.name}&quot;.
+                      </p>
+                      <Button asChild size="sm" className="mt-4 gap-1.5 font-bold shadow-sm">
+                        <Link to="/admin/products">
+                          <Plus className="size-4" /> Add Product
+                        </Link>
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredProds.map((p) => {
+                      const discount = p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
+                      return (
+                        <div
+                          key={p.id}
+                          className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm hover:border-primary hover:shadow-md transition duration-200"
+                        >
+                          <div className="flex gap-3">
+                            <div className="relative size-18 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden shrink-0 flex items-center justify-center p-1">
+                              <img
+                                src={p.imageUrl || p.image || "/placeholder.png"}
+                                alt={p.name}
+                                className="size-full object-contain group-hover:scale-105 transition duration-200"
+                                onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.png"; }}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition line-clamp-2 leading-tight">
+                                {p.name}
+                              </p>
+
+                              <div className="flex flex-wrap items-baseline gap-1.5 mt-1.5">
+                                <span className="text-sm font-black text-primary">{formatPrice(p.price)}</span>
+                                {p.mrp && p.mrp > p.price && (
+                                  <span className="text-xs text-slate-400 line-through">{formatPrice(p.mrp)}</span>
+                                )}
+                                {discount > 0 && (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                    {discount}% off
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-2">
+                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                  {p.unit || "Piece"}{p.piecesPerUnit > 1 ? ` (${p.piecesPerUnit} pcs)` : ""}
+                                </span>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                  p.isAvailable !== false ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-600 border border-red-200"
+                                }`}>
+                                  {p.isAvailable !== false ? "In Stock" : "Hidden"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <a
+                              href={`/product/${p.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-primary hover:underline transition"
+                              title="Preview on customer website (opens new tab)"
+                            >
+                              <ExternalLink className="size-3" />
+                              <span>View Store</span>
+                            </a>
+
+                            <Button asChild size="sm" className="h-7 px-3 text-xs font-bold gap-1 shadow-sm">
+                              <Link to="/admin/products" search={{ edit: p.id }}>
+                                <Pencil className="size-3" /> Edit Product
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="border-t border-slate-100 px-5 py-3.5 bg-slate-50 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500">
+                {selectedCategoryProducts.length} total products in {selectedCategory.name}
+              </span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setSelectedCategory(null); setProdSearch(""); }}>
+                  Close
+                </Button>
+                <Button asChild size="sm" className="gap-1.5 font-bold shadow-sm">
+                  <Link to="/admin/products">
+                    <span>Open Full Products Panel</span>
+                    <ExternalLink className="size-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>

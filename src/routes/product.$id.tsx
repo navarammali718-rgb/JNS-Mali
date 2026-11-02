@@ -306,7 +306,7 @@ function Product() {
           {/* Guarantees */}
           <div className="mt-6 grid grid-cols-2 gap-3 rounded-xl border border-border/60 bg-muted/40 p-4 text-xs sm:text-sm">
             <span className="flex items-center gap-2 font-semibold">
-              <Truck className="size-4 text-primary shrink-0" /> Fast delivery in 2–4 days
+              <Truck className="size-4 text-primary shrink-0" /> Fast delivery
             </span>
             <span className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="size-4 text-primary shrink-0" /> Verified quality product

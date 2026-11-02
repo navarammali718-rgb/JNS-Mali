@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { Plus, Pencil, Trash2, Loader2, X, ImagePlus, Package, Search, ArrowLeft, Percent } from "lucide-react";
 import {
   getAdminProductsFn,
@@ -69,7 +70,12 @@ function UnitPicker({ value, onChange }: { value: string, onChange: (v: string) 
   );
 }
 
+const productSearchSchema = z.object({
+  edit: z.string().optional(),
+});
+
 export const Route = createFileRoute("/admin/products")({
+  validateSearch: productSearchSchema,
   component: AdminProducts,
 });
 
@@ -103,6 +109,7 @@ function AdminProducts() {
   const [filterAvail, setFilterAvail] = useState<"all" | "available" | "hidden">("all");
   const fileRef = useRef<HTMLInputElement>(null);
   const extraFileRef = useRef<HTMLInputElement>(null);
+  const searchParams = Route.useSearch();
 
   async function loadAll() {
     try {
@@ -117,6 +124,15 @@ function AdminProducts() {
   }
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    if (searchParams.edit && products.length > 0) {
+      const target = products.find((p) => p.id === searchParams.edit || p._id === searchParams.edit);
+      if (target) {
+        openEdit(target);
+      }
+    }
+  }, [searchParams.edit, products]);
 
   function openAdd() {
     setEditId(null);

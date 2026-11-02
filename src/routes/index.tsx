@@ -1,24 +1,63 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, BadgeIndianRupee, RotateCcw, ShieldCheck, Truck, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import {
+  ArrowRight,
+  BadgeIndianRupee,
+  RotateCcw,
+  ShieldCheck,
+  Truck,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  Package,
+  HeartHandshake,
+  Headphones,
+  Award,
+  Zap,
+} from "lucide-react";
+import { useEffect, useState, useRef, type ComponentType } from "react";
 import hero from "@/assets/ghar-safai-hero.jpg";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { getCategoriesFn } from "@/server-functions";
 import { useStore } from "@/components/store/store-context";
 
-export const Route = createFileRoute('/')({
+const TRUST_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  Truck,
+  ShieldCheck,
+  RotateCcw,
+  BadgeIndianRupee,
+  Clock,
+  Sparkles,
+  CheckCircle2,
+  Package,
+  HeartHandshake,
+  Headphones,
+  Award,
+  Zap,
+};
+
+export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: 'JNS MALI — Cleaning & Household Essentials' },
-      { name: 'description', content: 'Shop affordable scrubbers, brushes, loofahs, camphor and household essentials with retail and wholesale pricing.' },
-      { property: 'og:title', content: 'JNS MALI — Cleaning & Household Essentials' },
-      { property: 'og:description', content: 'Everyday cleaning essentials at honest prices, delivered across India.' },
-      { property: 'og:type', content: 'website' },
-      { name: 'twitter:card', content: 'summary_large_image' }
-    ]
+      { title: "JNS MALI — Cleaning & Household Essentials" },
+      {
+        name: "description",
+        content:
+          "Shop affordable scrubbers, brushes, loofahs, camphor and household essentials with retail and wholesale pricing.",
+      },
+      { property: "og:title", content: "JNS MALI — Cleaning & Household Essentials" },
+      {
+        property: "og:description",
+        content: "Everyday cleaning essentials at honest prices, delivered across India.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
   }),
-  component: Home
+  component: Home,
 });
 
 function Home() {
@@ -31,17 +70,32 @@ function Home() {
   const heroImage = storefront?.heroImage || hero;
   const freeDelivery = storefront?.freeDeliveryThreshold ?? 499;
 
+  const defaultBadges = [
+    { icon: "Truck", title: "Free delivery", sub: `Orders over ₹${freeDelivery}` },
+    { icon: "ShieldCheck", title: "Quality checked", sub: "Useful, durable picks" },
+    { icon: "RotateCcw", title: "Easy returns", sub: "Within 7 days" },
+    { icon: "BadgeIndianRupee", title: "Better in bulk", sub: "Automatic tier prices" },
+  ];
+
+  const trustBadges =
+    Array.isArray(storefront?.trustBadges) && storefront.trustBadges.length === 4
+      ? storefront.trustBadges
+      : defaultBadges;
+
   // Active banners list from storefront DB, fallback to single hero
-  const banners = storefront?.banners && storefront.banners.length > 0
-    ? storefront.banners
-    : [{
-        imageUrl: heroImage,
-        title: "Everyday Household & Cleaning Essentials",
-        priceTag: "Starting ₹39",
-        mrpTag: "Up to 40% OFF",
-        productId: "",
-        linkUrl: "/shop"
-      }];
+  const banners =
+    storefront?.banners && storefront.banners.length > 0
+      ? storefront.banners
+      : [
+          {
+            imageUrl: heroImage,
+            title: "Everyday Household & Cleaning Essentials",
+            priceTag: "Starting ₹39",
+            mrpTag: "Up to 40% OFF",
+            productId: "",
+            linkUrl: "/shop",
+          },
+        ];
 
   useEffect(() => {
     async function loadData() {
@@ -140,7 +194,12 @@ function Home() {
 
                 if (b.productId) {
                   return (
-                    <Link key={i} to="/product/$id" params={{ id: b.productId }} className="block min-w-full">
+                    <Link
+                      key={i}
+                      to="/product/$id"
+                      params={{ id: b.productId }}
+                      className="block min-w-full"
+                    >
                       {bannerContent}
                     </Link>
                   );
@@ -167,7 +226,9 @@ function Home() {
               <>
                 <button
                   type="button"
-                  onClick={() => scrollToBanner((activeBannerIdx - 1 + banners.length) % banners.length)}
+                  onClick={() =>
+                    scrollToBanner((activeBannerIdx - 1 + banners.length) % banners.length)
+                  }
                   className="absolute left-3 top-1/2 -translate-y-1/2 grid size-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur hover:bg-black/70 transition opacity-0 group-hover:opacity-100 hidden sm:grid"
                   aria-label="Previous banner"
                 >
@@ -202,31 +263,89 @@ function Home() {
         </div>
       </section>
 
-<section className="mx-auto max-w-7xl px-4 py-8 lg:py-12">
-  <div className="flex items-end justify-between">
-    <div>
-      <p className="text-sm font-bold text-primary">Find it faster</p>
-      <h2 className="text-2xl sm:text-3xl font-black">Shop by category</h2>
-    </div>
-    <Button asChild variant="link" className="px-0"><Link to="/shop">View all <ArrowRight className="ml-1 size-4"/></Link></Button>
-  </div>
-  <div className="mt-6 flex overflow-x-auto pb-4 gap-5 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:gap-4" style={{ scrollbarWidth: "none" }}>
-    {categories.map(c=>
-      <Link key={c.slug} to="/category/$slug" params={{slug:c.slug}} className="group shrink-0 w-[84px] lg:w-auto snap-start text-center lg:text-left lg:overflow-hidden lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-sm">
-        <div className="mx-auto overflow-hidden rounded-full w-[72px] h-[72px] border-2 border-border/50 lg:w-full lg:h-auto lg:rounded-none lg:border-none">
-          <img src={c.image} alt={c.name} loading="lazy" width={1008} height={1008} className="aspect-square lg:aspect-[4/3] w-full h-full object-cover transition group-hover:scale-[1.03]"/>
+      <section className="mx-auto max-w-7xl px-4 py-8 lg:py-12">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-sm font-bold text-primary">Find it faster</p>
+            <h2 className="text-2xl sm:text-3xl font-black">Shop by category</h2>
+          </div>
+          <Button asChild variant="link" className="px-0">
+            <Link to="/shop">
+              View all <ArrowRight className="ml-1 size-4" />
+            </Link>
+          </Button>
         </div>
-        <div className="pt-2 lg:p-4">
-          <h3 className="font-bold text-[11px] leading-tight lg:text-base">{c.name}</h3>
-          <p className="hidden lg:block text-xs text-muted-foreground mt-1">{c.blurb}</p>
+        <div
+          className="mt-6 flex overflow-x-auto pb-4 gap-5 snap-x snap-mandatory lg:grid lg:grid-cols-4 lg:gap-4"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {categories.map((c) => (
+            <Link
+              key={c.slug}
+              to="/category/$slug"
+              params={{ slug: c.slug }}
+              className="group shrink-0 w-[84px] lg:w-auto snap-start text-center lg:text-left lg:overflow-hidden lg:rounded-xl lg:border lg:border-border lg:bg-card lg:shadow-sm"
+            >
+              <div className="mx-auto overflow-hidden rounded-full w-[72px] h-[72px] border-2 border-border/50 lg:w-full lg:h-auto lg:rounded-none lg:border-none">
+                <img
+                  src={c.image}
+                  alt={c.name}
+                  loading="lazy"
+                  width={1008}
+                  height={1008}
+                  className="aspect-square lg:aspect-[4/3] w-full h-full object-cover transition group-hover:scale-[1.03]"
+                />
+              </div>
+              <div className="pt-2 lg:p-4">
+                <h3 className="font-bold text-[11px] leading-tight lg:text-base">{c.name}</h3>
+                <p className="hidden lg:block text-xs text-muted-foreground mt-1">{c.blurb}</p>
+              </div>
+            </Link>
+          ))}
         </div>
-      </Link>
-    )}
-  </div>
-</section>
-<section className="border-y border-border bg-card"><div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-4 md:grid-cols-4 md:divide-y-0">{[{icon:Truck,title:'Free delivery',sub:`Orders over ₹${freeDelivery}`},{icon:ShieldCheck,title:'Quality checked',sub:'Useful, durable picks'},{icon:RotateCcw,title:'Easy returns',sub:'Within 7 days'},{icon:BadgeIndianRupee,title:'Better in bulk',sub:'Automatic tier prices'}].map(({icon:I,title,sub})=><div key={title} className="flex items-center gap-3 p-4"><I className="size-6 shrink-0 text-primary"/><div><b className="text-sm">{title}</b><p className="text-xs text-muted-foreground">{sub}</p></div></div>)}</div></section>
-<section className="bg-muted/60"><div className="mx-auto max-w-7xl px-4 py-12"><p className="text-sm font-bold text-primary">Customer favourites</p><div className="flex items-end justify-between"><h2 className="text-3xl font-black">Most reordered</h2><Link to="/shop" className="text-sm font-bold text-primary">See everything →</Link></div>
-{isLoading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin size-8 text-primary" /></div> : <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">{products.slice(0,5).map(p=><ProductCard key={p._id || p.id} product={{...p, id: p._id || p.id}}/>)}</div>}
+      </section>
+
+      {/* Customer favourites / Most reordered products (Visible right below categories!) */}
+      <section className="bg-muted/60">
+        <div className="mx-auto max-w-7xl px-4 py-8 lg:py-12">
+          <p className="text-sm font-bold text-primary">Customer favourites</p>
+          <div className="flex items-end justify-between">
+            <h2 className="text-2xl sm:text-3xl font-black">Most reordered</h2>
+            <Link to="/shop" className="text-sm font-bold text-primary hover:underline">
+              See everything →
+            </Link>
+          </div>
+          {isLoading || isProductsLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="animate-spin size-8 text-primary" />
+            </div>
+          ) : (
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+              {products.slice(0, 10).map((p) => (
+                <ProductCard key={p._id || p.id} product={{ ...p, id: p._id || p.id }} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 4 Trust Highlights (Pushed down right before the footer!) */}
+      <section className="border-y border-border bg-card">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-4 md:grid-cols-4 md:divide-y-0">
+          {trustBadges.map(
+            (badge: { icon?: string; title?: string; sub?: string }, idx: number) => {
+              const Icon = (badge.icon && TRUST_ICONS[badge.icon]) || ShieldCheck;
+              return (
+                <div key={idx} className="flex items-center gap-3 p-4">
+                  <Icon className="size-6 shrink-0 text-primary" />
+                  <div>
+                    <b className="text-sm">{badge.title}</b>
+                    <p className="text-xs text-muted-foreground">{badge.sub}</p>
+                  </div>
+                </div>
+              );
+            },
+          )}
         </div>
       </section>
     </main>

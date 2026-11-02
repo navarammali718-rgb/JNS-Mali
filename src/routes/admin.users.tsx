@@ -1,22 +1,36 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { Loader2, Users, ShieldOff, ShieldCheck, Search, X, ArrowLeft } from "lucide-react";
 import { getAllUsersFn, blockUserFn } from "@/server-functions";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/catalog";
 
+const userSearchSchema = z.object({
+  q: z.string().optional(),
+  userId: z.string().optional(),
+});
+
 export const Route = createFileRoute("/admin/users")({
+  validateSearch: userSearchSchema,
   component: AdminUsers,
 });
 
 function AdminUsers() {
+  const searchParams = Route.useSearch();
   const [users, setUsers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.q || searchParams.userId || "");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [reasonModal, setReasonModal] = useState<{ user: any } | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (searchParams.q || searchParams.userId) {
+      setSearch(searchParams.q || searchParams.userId || "");
+    }
+  }, [searchParams.q, searchParams.userId]);
 
   async function load() {
     setIsLoading(true);
@@ -50,10 +64,16 @@ function AdminUsers() {
   }
 
   const filtered = users.filter(u => {
-    const q = search.toLowerCase();
-    return !q || u.email?.toLowerCase().includes(q) ||
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    const fullName = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim().toLowerCase();
+    return (
+      u.clerkId?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
       u.firstName?.toLowerCase().includes(q) ||
-      u.lastName?.toLowerCase().includes(q);
+      u.lastName?.toLowerCase().includes(q) ||
+      fullName.includes(q)
+    );
   });
 
   const blockedCount = users.filter(u => u.isBlocked).length;
