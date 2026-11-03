@@ -67,14 +67,19 @@ public class MainActivity extends BridgeActivity {
                 settings.setDatabaseEnabled(true);
                 settings.setDomStorageEnabled(true);
                 settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                settings.setJavaScriptCanOpenWindowsAutomatically(true);
+                settings.setSupportMultipleWindows(false);
 
                 // Enable third-party and persistent cookies across app restarts (critical for Clerk authentication)
                 CookieManager cookieManager = CookieManager.getInstance();
                 cookieManager.setAcceptCookie(true);
                 cookieManager.setAcceptThirdPartyCookies(webView, true);
 
-                // For the Admin package (com.jnsmali.admin), guarantee JNS_ADMIN is in User-Agent
+                // Clean the User-Agent: strip "Version/4.0 " and "; wv" so Google OAuth allows sign-in in WebView!
                 String ua = settings.getUserAgentString();
+                if (ua != null) {
+                    ua = ua.replace("Version/4.0 ", "").replace("; wv", "");
+                }
                 if (getPackageName().contains("admin")) {
                     if (ua != null && !ua.contains("JNS_ADMIN")) {
                         settings.setUserAgentString(ua + " JNS_ADMIN");

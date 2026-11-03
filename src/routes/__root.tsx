@@ -169,12 +169,12 @@ function RootComponent() {
   const isAdmin = location.startsWith("/admin");
 
   useEffect(() => {
-    // If running in the Admin APK (User-Agent: JNS_ADMIN), ensure it stays strictly on /admin
+    // If running in the Admin APK (User-Agent: JNS_ADMIN), ensure it stays strictly on /admin or /sso-callback
     const isNativeAdmin =
       Capacitor.isNativePlatform() &&
       navigator.userAgent.includes("JNS_ADMIN");
 
-    if (isNativeAdmin && !location.startsWith("/admin")) {
+    if (isNativeAdmin && !location.startsWith("/admin") && !location.startsWith("/sso-callback")) {
       router.navigate({ to: "/admin", replace: true });
       return;
     }
@@ -251,8 +251,8 @@ function RootComponent() {
       <QueryClientProvider client={queryClient}>
         {/* Syncs every signed-in user to MongoDB — must be inside ClerkProvider */}
         <UserSyncer />
-        {isAdmin ? (
-          // Admin routes: no store shell, no header/footer, Clerk available
+        {isAdmin || location.startsWith("/sso-callback") ? (
+          // Admin routes and SSO callback: no store shell, no header/footer, Clerk available
           <Outlet />
         ) : (
           // Store routes: full store layout
