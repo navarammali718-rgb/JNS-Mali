@@ -33,27 +33,27 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-16 sm:pb-0">
+    <div className="min-h-screen bg-background text-foreground pb-24 sm:pb-0 w-full overflow-x-hidden">
       {/* Announcement bar */}
-      <div className="bg-primary px-4 py-2 text-center text-xs font-semibold text-primary-foreground">
+      <div className="bg-primary px-3 py-1.5 sm:px-4 sm:py-2 text-center text-xs font-semibold text-primary-foreground truncate">
         {storefront?.announcement || "Free delivery on all orders"}
       </div>
 
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex flex-wrap items-center justify-between gap-y-3 py-3 sm:grid sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-6">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur w-full">
+        <div className="mx-auto max-w-7xl px-3 sm:px-4">
+          <div className="flex flex-wrap items-center justify-between gap-y-2.5 py-2.5 sm:py-3 sm:grid sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-6 min-w-0">
 
             {/* Top row: Hamburger + Logo + Mobile icons */}
-            <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="lg:hidden -ml-2" onClick={() => setMenu(!menu)} aria-label="Toggle menu">
-                  {menu ? <X /> : <Menu />}
+            <div className="flex w-full items-center justify-between sm:w-auto sm:justify-start sm:gap-4 min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <Button variant="ghost" size="icon" className="lg:hidden -ml-1 size-9" onClick={() => setMenu(!menu)} aria-label="Toggle menu">
+                  {menu ? <X className="size-5" /> : <Menu className="size-5" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="lg:hidden -ml-1 text-muted-foreground" onClick={() => window.location.reload()} aria-label="Refresh app">
+                <Button variant="ghost" size="icon" className="lg:hidden size-9 text-muted-foreground" onClick={() => window.location.reload()} aria-label="Refresh app">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
                 </Button>
                 <Link to="/" className="flex shrink-0 items-center gap-2">
-                  <img src="/logo.jpeg" alt="JNS MALI Logo" className="size-9 rounded-lg object-cover sm:size-10 bg-white" />
+                  <img src="/logo.jpeg" alt="JNS MALI Logo" className="size-8 rounded-lg object-cover sm:size-10 bg-white" />
                   <span className="hidden sm:block">
                     <b className="block text-xl leading-none">JNS MALI</b>
                     <small className="text-[10px] font-bold uppercase text-muted-foreground">Har ghar ka saathi</small>
@@ -62,16 +62,16 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Mobile top-right icons */}
-              <div className="flex items-center gap-1 sm:hidden -mr-2">
-                <Button asChild variant="ghost" size="icon">
-                  <Link to="/wishlist"><Heart className="size-5" /></Link>
+              <div className="flex items-center gap-0.5 sm:hidden">
+                <Button asChild variant="ghost" size="icon" className="size-9">
+                  <Link to="/wishlist" aria-label="Wishlist"><Heart className="size-5" /></Link>
                 </Button>
-                <Button asChild variant="ghost" size="icon" className="relative">
-                  <Link to="/cart">
+                <Button asChild variant="ghost" size="icon" className="relative size-9">
+                  <Link to="/cart" aria-label="Cart">
                     <ShoppingCart className="size-5" />
                     {mounted && cartCount > 0 && (
-                      <span className="absolute right-0 top-0 grid size-4 place-items-center rounded-full bg-primary text-[9px] text-primary-foreground">
-                        {cartCount}
+                      <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-primary text-[9px] font-black text-primary-foreground">
+                        {cartCount > 9 ? "9+" : cartCount}
                       </span>
                     )}
                   </Link>
@@ -80,15 +80,15 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Search bar */}
-            <form onSubmit={search} className="flex w-full order-last sm:order-none sm:mx-auto sm:max-w-2xl">
+            <form onSubmit={search} className="flex w-full order-last sm:order-none sm:mx-auto sm:max-w-2xl min-w-0">
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search scrubbers, loofahs, brushes…"
                 aria-label="Search products"
-                className="h-10 rounded-r-none border-r-0 bg-muted/60 sm:h-11"
+                className="h-10 min-w-0 flex-1 rounded-r-none border-r-0 bg-muted/60 sm:h-11 text-xs sm:text-sm"
               />
-              <Button type="submit" className="h-10 rounded-l-none px-4 sm:h-11" aria-label="Search">
+              <Button type="submit" className="h-10 shrink-0 rounded-l-none px-3.5 sm:px-4 sm:h-11" aria-label="Search">
                 <Search className="size-4 sm:size-5" />
               </Button>
             </form>
@@ -192,7 +192,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
       {/* ─── Mobile bottom navigation bar ─── */}
       <div
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 backdrop-blur sm:hidden max-w-full"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {[
@@ -207,13 +207,13 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
             <Link
               key={to}
               to={to}
-              className={`relative flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-bold transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-bold transition-colors ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {/* Active indicator line at top */}
               {isActive && (
-                <span className="absolute inset-x-4 top-0 h-[2px] rounded-full bg-primary" />
+                <span className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-primary" />
               )}
               <span className="relative">
                 <Icon className={`size-5 transition-all ${isActive ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
@@ -223,7 +223,7 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
               </span>
-              <span className={isActive ? "text-primary" : ""}>{label}</span>
+              <span className={`truncate max-w-[56px] text-center ${isActive ? "text-primary" : ""}`}>{label}</span>
             </Link>
           );
         })}

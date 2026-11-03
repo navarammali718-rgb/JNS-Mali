@@ -488,7 +488,7 @@ function Checkout() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+    <main className="mx-auto w-full max-w-5xl px-3 sm:px-4 py-4 sm:py-8 min-w-0 overflow-x-hidden">
       {/* Back to Cart Button */}
       <div className="mb-4">
         <button
@@ -499,25 +499,26 @@ function Checkout() {
               navigate({ to: "/cart" });
             }
           }}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-bold text-foreground shadow-sm transition hover:bg-muted hover:text-primary"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs sm:text-sm font-bold text-foreground shadow-sm transition hover:bg-muted hover:text-primary"
         >
           <ArrowLeft className="size-4" />
           <span>Back to Cart</span>
         </button>
       </div>
 
-      <h1 className="text-3xl sm:text-4xl font-black">Checkout</h1>
+      <h1 className="text-2xl sm:text-4xl font-black">Checkout</h1>
 
       {/* Step indicator */}
-      <div className="mt-6 grid grid-cols-3 gap-2">
+      <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-1.5 sm:gap-2 min-w-0">
         {steps.map(({ n, icon: Icon, title }) => (
           <div
             key={title}
-            className={`flex items-center gap-2 border-b-4 pb-3 text-sm font-bold ${step >= n ? "border-primary text-primary" : "border-border text-muted-foreground"
-              }`}
+            className={`flex items-center justify-center sm:justify-start gap-1 sm:gap-2 border-b-4 pb-2 sm:pb-3 text-xs sm:text-sm font-bold min-w-0 ${
+              step >= n ? "border-primary text-primary" : "border-border text-muted-foreground"
+            }`}
           >
-            {step > n ? <Check className="size-4" /> : <Icon className="size-4" />}
-            {title}
+            {step > n ? <Check className="size-3.5 sm:size-4 shrink-0" /> : <Icon className="size-3.5 sm:size-4 shrink-0" />}
+            <span className="truncate">{title}</span>
           </div>
         ))}
       </div>
@@ -528,16 +529,16 @@ function Checkout() {
         </div>
       )}
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_320px]">
-        <section className="rounded-lg border border-border bg-card p-5 sm:p-7">
+      <div className="mt-6 sm:mt-8 grid gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_340px] w-full min-w-0">
+        <section className="rounded-xl border border-border bg-card p-3.5 sm:p-7 min-w-0 w-full overflow-hidden">
           {/* Step 1 — Address */}
           {step === 1 && (
             <>
-              <h2 className="text-2xl font-black">Delivery address</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <h2 className="text-xl sm:text-2xl font-black">Delivery address</h2>
+              <p className="mt-1 text-xs sm:text-sm text-muted-foreground truncate">
                 Signed in as <span className="font-semibold text-foreground">{user?.primaryEmailAddress?.emailAddress}</span>
               </p>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 min-w-0">
                 <Field
                   label="Full name"
                   placeholder=""
@@ -612,21 +613,21 @@ function Checkout() {
                     )}
                   </div>
                 </div>
-                <div className="sm:col-span-2 mt-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-semibold">Pin your exact location *</label>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setIsMapFullscreen(prev => !prev)}>
+                <div className="sm:col-span-2 mt-2 min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label className="block text-xs sm:text-sm font-semibold">Pin your exact location *</label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setIsMapFullscreen(prev => !prev)} className="text-xs h-8 px-2.5">
                         {isMapFullscreen ? <Minimize2 className="size-3.5 mr-1" /> : <Maximize2 className="size-3.5 mr-1" />}
                         {isMapFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting}>
-                        {isDetecting ? <Loader2 className="mr-2 size-3.5 animate-spin" /> : <MapPin className="mr-2 size-3.5" />}
+                      <Button variant="outline" size="sm" onClick={handleAutoDetect} disabled={isDetecting} className="text-xs h-8 px-2.5">
+                        {isDetecting ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <MapPin className="mr-1.5 size-3.5" />}
                         {isDetecting ? "Detecting..." : "Auto Detect"}
                       </Button>
                     </div>
                   </div>
-                  <div className={`${isMapFullscreen ? "fixed inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-2rem)]" : "h-[400px]"} w-full rounded-lg border border-border overflow-hidden relative bg-muted transition-all duration-300`}>
+                  <div className={`${isMapFullscreen ? "fixed inset-2 sm:inset-4 z-50 shadow-2xl rounded-xl h-[calc(100vh-1rem)] sm:h-[calc(100vh-2rem)]" : "h-[300px] sm:h-[400px]"} w-full rounded-lg border border-border overflow-hidden relative bg-muted transition-all duration-300 min-w-0`}>
                     {mounted && (
                       <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-sm font-medium text-muted-foreground">Loading map...</div>}>
                         <MapPicker 
@@ -750,27 +751,33 @@ function Checkout() {
         </section>
 
         {/* Order summary sidebar — appears first on mobile, right on desktop */}
-        <aside className="h-fit rounded-lg bg-muted p-5 order-first lg:order-last">
-          <h2 className="font-black">Order summary</h2>
-          <div className="mt-4 space-y-2">
+        <aside className="h-fit rounded-xl bg-muted p-3.5 sm:p-5 order-first lg:order-last min-w-0 w-full overflow-hidden">
+          <h2 className="text-base sm:text-lg font-black">Order summary</h2>
+          <div className="mt-3 sm:mt-4 space-y-2.5 sm:space-y-2">
             {cartItems.map((item) => (
-              <div key={item.productId} className="flex justify-between text-sm">
-                <span className="text-muted-foreground truncate mr-2">{item.name} × {item.quantity}</span>
-                <b className="shrink-0">{formatPrice(item.price * (item.quantity ?? 1))}</b>
+              <div key={item.productId} className="flex items-start justify-between text-xs sm:text-sm gap-2 min-w-0">
+                <span className="text-muted-foreground min-w-0 flex-1 break-words line-clamp-2 pr-1">
+                  {item.name} <span className="font-bold text-foreground whitespace-nowrap">× {item.quantity}</span>
+                </span>
+                <b className="shrink-0 whitespace-nowrap font-bold text-foreground">
+                  {formatPrice(item.price * (item.quantity ?? 1))}
+                </b>
               </div>
             ))}
           </div>
-          <div className="mt-4 border-t border-border pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Subtotal</span><b>{formatPrice(subtotal)}</b>
+          <div className="mt-4 border-t border-border pt-3 sm:pt-4 space-y-2">
+            <div className="flex justify-between items-center text-xs sm:text-sm min-w-0">
+              <span className="text-muted-foreground">Subtotal</span>
+              <b className="shrink-0 whitespace-nowrap">{formatPrice(subtotal)}</b>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Delivery</span><b>{delivery === 0 ? "FREE" : `₹${calculatedDeliveryFee}`}</b>
+            <div className="flex justify-between items-center text-xs sm:text-sm min-w-0">
+              <span className="text-muted-foreground">Delivery</span>
+              <b className="shrink-0 whitespace-nowrap">{delivery === 0 ? "FREE" : `₹${calculatedDeliveryFee}`}</b>
             </div>
           </div>
-          <div className="mt-4 flex justify-between border-t border-border pt-4 text-xl font-black">
+          <div className="mt-4 flex justify-between items-center border-t border-border pt-3 sm:pt-4 text-lg sm:text-xl font-black min-w-0">
             <span>Total</span>
-            <span>{formatPrice(total)}</span>
+            <span className="shrink-0 whitespace-nowrap text-primary">{formatPrice(total)}</span>
           </div>
         </aside>
       </div>

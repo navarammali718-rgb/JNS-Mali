@@ -111,12 +111,12 @@ function Product() {
   const currentDisplayImage = galleryImages[activeImageIndex] || galleryImages[0] || "/placeholder.png";
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+    <main className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-8 min-w-0 overflow-x-hidden">
       {/* Top Navigation & Back Button */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border/50 pb-4">
         <button
           onClick={handleBack}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-bold text-foreground shadow-sm transition hover:bg-muted hover:text-primary"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs sm:text-sm font-bold text-foreground shadow-sm transition hover:bg-muted hover:text-primary"
         >
           <ArrowLeft className="size-4" />
           <span>Back</span>
@@ -127,18 +127,18 @@ function Product() {
           <span>/</span>
           <Link to="/shop" className="hover:text-primary transition">Shop</Link>
           <span>/</span>
-          <span className="font-semibold text-foreground truncate max-w-[200px]">{p.name}</span>
+          <span className="font-semibold text-foreground truncate max-w-[160px] sm:max-w-[200px]">{p.name}</span>
         </nav>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 sm:gap-8 lg:grid-cols-2 min-w-0">
         {/* Photos & Gallery Column */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-white shadow-sm flex items-center justify-center p-3">
             <img
               src={currentDisplayImage}
               alt={p.name}
-              className="max-h-[420px] sm:max-h-[480px] w-full object-contain transition duration-300"
+              className="max-h-[340px] sm:max-h-[480px] w-full object-contain transition duration-300"
               onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.png"; }}
             />
             {p.mrp && p.mrp > p.price && (
@@ -168,7 +168,7 @@ function Product() {
                     key={idx}
                     type="button"
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative shrink-0 size-16 sm:size-20 rounded-xl overflow-hidden border-2 bg-white transition ${
+                    className={`relative shrink-0 size-14 sm:size-20 rounded-xl overflow-hidden border-2 bg-white transition ${
                       activeImageIndex === idx
                         ? "border-primary ring-2 ring-primary/20 shadow-md scale-105"
                         : "border-border opacity-70 hover:opacity-100"
@@ -183,8 +183,8 @@ function Product() {
         </div>
 
         {/* Product Details Column */}
-        <div className="lg:py-2">
-          <div className="flex items-center justify-between">
+        <div className="lg:py-2 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-primary">
               {p.category} · {p.isAvailable !== false ? "In Stock" : "Temporarily Out of Stock"}
             </p>

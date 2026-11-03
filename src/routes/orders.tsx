@@ -108,15 +108,15 @@ function Page() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
+    <main className="mx-auto max-w-5xl px-3 sm:px-4 py-4 sm:py-8 min-w-0 overflow-x-hidden">
       <Link
         to="/"
         className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition mb-4"
       >
         <ArrowLeft className="size-4" /> Back to Home
       </Link>
-      <h1 className="text-4xl font-black">My Orders</h1>
-      <p className="mt-2 text-muted-foreground">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
+      <h1 className="text-2xl sm:text-4xl font-black">My Orders</h1>
+      <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-muted-foreground truncate">Signed in as {user?.primaryEmailAddress?.emailAddress}</p>
 
       {cancelError && (
         <div className="mt-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive">
@@ -150,34 +150,35 @@ function Page() {
             const date = new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
             return (
-              <article key={order._id} className="rounded-xl border border-border bg-card">
-                <header className="flex flex-wrap justify-between gap-3 border-b border-border p-5">
-                  <div>
+              <article key={order._id} className="rounded-xl border border-border bg-card min-w-0 overflow-hidden">
+                <header className="flex flex-wrap justify-between gap-3 border-b border-border p-3.5 sm:p-5">
+                  <div className="min-w-0">
                     <p className="text-xs text-muted-foreground">ORDER {shortId} · {date}</p>
-                    <h2 className="mt-1 text-xl font-black">{order.shippingDetails?.city} delivery</h2>
-                    <p className="text-sm text-muted-foreground">{order.items?.length} item{order.items?.length !== 1 ? "s" : ""} · {formatPrice(order.totalAmount)}</p>
+                    <h2 className="mt-1 text-lg sm:text-xl font-black truncate">{order.shippingDetails?.city} delivery</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{order.items?.length} item{order.items?.length !== 1 ? "s" : ""} · {formatPrice(order.totalAmount)}</p>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${statusColor[order.status] ?? "bg-muted text-muted-foreground"}`}>
+                  <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+                    <span className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-bold capitalize ${statusColor[order.status] ?? "bg-muted text-muted-foreground"}`}>
                       {order.status}
                     </span>
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline" size="sm" className="h-7 text-xs">
                       <Link to="/shop">Buy again</Link>
                     </Button>
                     {/* Cancel button — only for pending orders */}
                     {order.status === "pending" && (
                       confirmCancelId === order._id ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-destructive">Cancel order?</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className="text-xs font-semibold text-destructive">Cancel?</span>
                           <Button
                             size="sm"
                             variant="destructive"
+                            className="h-7 text-xs px-2"
                             onClick={() => handleCancelOrder(order._id)}
                             disabled={cancellingId === order._id}
                           >
-                            {cancellingId === order._id ? <Loader2 className="size-3.5 animate-spin" /> : "Yes, cancel"}
+                            {cancellingId === order._id ? <Loader2 className="size-3 animate-spin" /> : "Yes"}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmCancelId(null)}>
+                          <Button size="sm" variant="ghost" className="size-7 p-0" onClick={() => setConfirmCancelId(null)}>
                             <X className="size-3.5" />
                           </Button>
                         </div>
@@ -185,7 +186,7 @@ function Page() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-destructive text-destructive hover:bg-destructive/10"
+                          className="h-7 text-xs border-destructive text-destructive hover:bg-destructive/10"
                           onClick={() => { setCancelError(""); setConfirmCancelId(order._id); }}
                         >
                           Cancel order
@@ -195,20 +196,20 @@ function Page() {
                   </div>
                 </header>
 
-                <div className="p-5">
+                <div className="p-3.5 sm:p-5 min-w-0">
                   {/* Progress bar */}
                   {order.status !== "cancelled" ? (
-                    <div className="grid grid-cols-4 gap-1">
+                    <div className="grid grid-cols-4 gap-1 min-w-0">
                       {STATUS_STEPS.map(({ icon: Icon, title }, i) => {
                         const done = step > i;
                         const active = step === i + 1;
                         return (
-                          <div key={title} className="text-center">
-                            <span className={`mx-auto grid size-9 place-items-center rounded-full ${done || active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                              <Icon className="size-4" />
+                          <div key={title} className="text-center min-w-0">
+                            <span className={`mx-auto grid size-7 sm:size-9 place-items-center rounded-full ${done || active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                              <Icon className="size-3.5 sm:size-4" />
                             </span>
                             <div className={`mt-2 h-1 ${done ? "bg-primary" : "bg-muted"}`} />
-                            <p className="mt-2 text-xs font-bold">{title}</p>
+                            <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs font-bold truncate">{title}</p>
                           </div>
                         );
                       })}

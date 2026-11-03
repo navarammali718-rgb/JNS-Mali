@@ -331,16 +331,16 @@ function Home() {
 
       {/* 4 Trust Highlights (Pushed down right before the footer!) */}
       <section className="border-y border-border bg-card">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-4 md:grid-cols-4 md:divide-y-0">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-border px-3 sm:px-4 md:grid-cols-4 md:divide-y-0 min-w-0">
           {trustBadges.map(
             (badge: { icon?: string; title?: string; sub?: string }, idx: number) => {
               const Icon = (badge.icon && TRUST_ICONS[badge.icon]) || ShieldCheck;
               return (
-                <div key={idx} className="flex items-center gap-3 p-4">
-                  <Icon className="size-6 shrink-0 text-primary" />
-                  <div>
-                    <b className="text-sm">{badge.title}</b>
-                    <p className="text-xs text-muted-foreground">{badge.sub}</p>
+                <div key={idx} className="flex items-center gap-2.5 p-3 sm:p-4 min-w-0">
+                  <Icon className="size-5 sm:size-6 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <b className="text-xs sm:text-sm block truncate">{badge.title}</b>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{badge.sub}</p>
                   </div>
                 </div>
               );

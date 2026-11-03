@@ -58,18 +58,18 @@ function Page() {
   const initials = (user.firstName?.[0] ?? email[0] ?? "U").toUpperCase();
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center gap-4">
+    <main className="mx-auto max-w-6xl px-3 sm:px-4 py-6 sm:py-8 min-w-0 overflow-x-hidden">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         {user.imageUrl ? (
-          <img src={user.imageUrl} alt={displayName} className="size-16 rounded-full object-cover ring-2 ring-primary/30" />
+          <img src={user.imageUrl} alt={displayName} className="size-14 sm:size-16 rounded-full object-cover ring-2 ring-primary/30 shrink-0" />
         ) : (
-          <span className="grid size-14 place-items-center rounded-full bg-secondary text-xl font-black">
+          <span className="grid size-12 sm:size-14 place-items-center rounded-full bg-secondary text-lg sm:text-xl font-black shrink-0">
             {initials}
           </span>
         )}
-        <div>
-          <p className="text-sm text-muted-foreground">Welcome back</p>
-          <h1 className="text-3xl font-black">{displayName}</h1>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-muted-foreground">Welcome back</p>
+          <h1 className="text-2xl sm:text-3xl font-black truncate">{displayName}</h1>
         </div>
       </div>
 
