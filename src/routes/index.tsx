@@ -16,6 +16,8 @@ import {
   Headphones,
   Award,
   Zap,
+  Download,
+  Smartphone,
 } from "lucide-react";
 import { useEffect, useState, useRef, type ComponentType } from "react";
 import hero from "@/assets/ghar-safai-hero.jpg";
@@ -326,6 +328,72 @@ function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Official Mobile App Download Section */}
+      <section className="bg-gradient-to-br from-emerald-900 via-primary/95 to-emerald-950 text-white overflow-hidden relative">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:py-14 grid gap-8 md:grid-cols-2 items-center">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur">
+              <Smartphone className="size-3.5" /> Official Android App
+            </span>
+            <h2 className="mt-3 text-2xl sm:text-4xl font-black leading-tight">
+              Shop Faster with the JNS MALI Mobile App
+            </h2>
+            <p className="mt-3 text-sm sm:text-base text-white/80 max-w-lg leading-relaxed">
+              Download our Android application directly to your mobile for instant order status notifications, 1-tap reordering, and a smooth shopping experience.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-4">
+              <a
+                href="/JNS-MALI-Customer.apk"
+                download="JNS-MALI-Customer.apk"
+                className="inline-flex items-center gap-2.5 rounded-xl bg-white px-5 py-3 text-sm font-black text-emerald-950 shadow-lg hover:bg-white/90 active:scale-95 transition"
+              >
+                <Download className="size-5 text-emerald-700" />
+                <div className="text-left">
+                  <div className="text-[10px] uppercase font-bold text-emerald-700 leading-none">Direct Download</div>
+                  <div className="text-sm font-black leading-tight">Download Android APK</div>
+                </div>
+              </a>
+              <div className="text-xs text-white/70 space-y-0.5">
+                <div>✓ Version 1.3 · Free & Verified</div>
+                <div>✓ Direct install for all Android phones</div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-center md:justify-end">
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/15 max-w-sm w-full space-y-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <img src="/logo.jpeg" alt="Logo" className="size-12 rounded-xl object-cover bg-white" />
+                <div>
+                  <div className="font-bold text-base">JNS MALI App</div>
+                  <div className="text-xs text-white/70">Har ghar ka saathi</div>
+                </div>
+              </div>
+              <div className="text-xs space-y-2 text-white/85">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                  <span>Instant order alerts & dispatch tracking</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                  <span>Quick address saving & 1-tap checkout</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                  <span>Exclusive wholesale & household bundle deals</span>
+                </div>
+              </div>
+              <a
+                href="/JNS-MALI-Customer.apk"
+                download="JNS-MALI-Customer.apk"
+                className="block w-full text-center rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2.5 text-xs transition shadow active:scale-95"
+              >
+                Download APK Now
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 

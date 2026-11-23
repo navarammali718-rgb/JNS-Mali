@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useRouterState, useRouter } from "@tanstack/react-router";
 import PullToRefresh from 'react-simple-pull-to-refresh';
 import { useUser, useClerk } from "@clerk/clerk-react";
-import { Heart, Home, Menu, Package, Search, ShoppingBag, ShoppingCart, UserRound, X, LogIn, LogOut } from "lucide-react";
+import { Heart, Home, Menu, Package, Search, ShoppingBag, ShoppingCart, UserRound, X, LogIn, LogOut, Download, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStore } from "./store-context";
@@ -21,11 +21,24 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState(false);
   const [q, setQ] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [showAppBanner, setShowAppBanner] = useState(true);
+  const [isNative, setIsNative] = useState(false);
   const navigate = useNavigate();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const inNative =
+      typeof window !== "undefined" &&
+      (Boolean((window as any).Capacitor?.isNativePlatform?.()) ||
+        navigator.userAgent.includes("JNS_MALI_APP") ||
+        navigator.userAgent.includes("JNS_ADMIN"));
+    setIsNative(inNative);
+    if (sessionStorage.getItem("jns_hide_app_banner") === "1") {
+      setShowAppBanner(false);
+    }
+  }, []);
 
   const search = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +51,47 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
       <div className="bg-primary px-3 py-1.5 sm:px-4 sm:py-2 text-center text-xs font-semibold text-primary-foreground truncate">
         {storefront?.announcement || "Free delivery on all orders"}
       </div>
+
+      {/* Smart Android App Download Banner (Web-only) */}
+      {!isNative && showAppBanner && (
+        <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-primary px-3 py-1.5 sm:py-2 text-xs text-white shadow-sm transition-all w-full">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <img
+                src="/logo.jpeg"
+                alt="JNS MALI"
+                className="size-7 rounded-lg object-cover bg-white shrink-0 border border-white/20"
+              />
+              <div className="truncate">
+                <span className="font-black text-white">JNS MALI Android App</span>
+                <span className="hidden sm:inline text-white/90 text-xs ml-1.5">
+                  — Fast ordering, instant alerts & live order tracking
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href="/JNS-MALI-Customer.apk"
+                download="JNS-MALI-Customer.apk"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-black text-emerald-950 shadow hover:bg-white/90 active:scale-95 transition"
+              >
+                <Download className="size-3.5 text-emerald-700" />
+                <span>Download APK</span>
+              </a>
+              <button
+                onClick={() => {
+                  setShowAppBanner(false);
+                  sessionStorage.setItem("jns_hide_app_banner", "1");
+                }}
+                className="rounded p-1 text-white/80 hover:bg-white/10 hover:text-white"
+                aria-label="Dismiss app banner"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur w-full">
         <div className="mx-auto max-w-7xl px-3 sm:px-4">
@@ -95,6 +149,14 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop icons */}
             <nav className="hidden sm:flex items-center justify-end gap-1">
+              {!isNative && (
+                <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex text-xs font-bold gap-1.5 border-emerald-600/40 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40 h-9 mr-1">
+                  <a href="/JNS-MALI-Customer.apk" download="JNS-MALI-Customer.apk" title="Download Android APK">
+                    <Download className="size-3.5 text-emerald-600" />
+                    <span>App APK</span>
+                  </a>
+                </Button>
+              )}
               <Button asChild variant="ghost" size="icon">
                 <Link to="/wishlist" aria-label={`Wishlist with ${wishlist.length} items`}>
                   <Heart />
@@ -131,6 +193,22 @@ export function SiteShell({ children }: { children: React.ReactNode }) {
 
           {/* Dropdown + desktop nav links */}
           <nav className={`${menu ? "flex" : "hidden"} flex-col gap-1 border-t border-border py-3 lg:flex lg:flex-row lg:items-center lg:border-0 lg:py-0`}>
+            {!isNative && (
+              <a
+                href="/JNS-MALI-Customer.apk"
+                download="JNS-MALI-Customer.apk"
+                onClick={() => setMenu(false)}
+                className="flex items-center justify-between rounded-lg bg-emerald-500/10 border border-emerald-500/25 px-3 py-2.5 text-sm font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-500/20 my-1 lg:hidden"
+              >
+                <span className="flex items-center gap-2">
+                  <Smartphone className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Download Android App</span>
+                </span>
+                <span className="rounded bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider">
+                  APK
+                </span>
+              </a>
+            )}
             {nav.map((item) => (
               <Link
                 key={item.label}
@@ -250,9 +328,19 @@ function Footer() {
             <p>📞 {contactPhone}</p>
             <p>✉️ {contactEmail}</p>
           </div>
+          <div className="mt-5">
+            <a
+              href="/JNS-MALI-Customer.apk"
+              download="JNS-MALI-Customer.apk"
+              className="inline-flex items-center gap-2 rounded-lg bg-background text-foreground px-4 py-2 text-xs font-bold hover:bg-background/90 transition shadow"
+            >
+              <Smartphone className="size-4 text-emerald-500" />
+              <span>Download Android App (APK)</span>
+            </a>
+          </div>
         </div>
         <FooterGroup title="Shop" links={[["All products", "/shop"], ["Wishlist", "/wishlist"]]} />
-        <FooterGroup title="Help" links={[["FAQs", "/faq"], ["Contact us", "/contact"], ["Track order", "/orders"]]} />
+        <FooterGroup title="Help" links={[["FAQs", "/faq"], ["Contact us", "/contact"], ["Track order", "/orders"], ["Download App", "/download"]]} />
         <FooterGroup title="JNS MALI" links={[["About us", "/about"], ["Shipping", "/shipping"], ["Returns", "/returns"], ["Privacy", "/privacy"]]} />
       </div>
       <div className="border-t border-background/15 px-4 py-5 text-center text-xs opacity-60">
